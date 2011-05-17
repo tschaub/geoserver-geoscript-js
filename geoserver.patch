@@ -1,0 +1,38 @@
+Index: src/community/pom.xml
+===================================================================
+--- src/community/pom.xml	(revision 15854)
++++ src/community/pom.xml	(working copy)
+@@ -118,6 +118,12 @@
+       </modules>
+     </profile>
+     <profile>
++      <id>geoscript-js</id>
++      <modules>
++        <module>geoscript-js</module>
++      </modules>
++    </profile>
++    <profile>
+       <id>hibernate</id>
+       <modules>
+         <module>hibernate</module>
+Index: src/web/app/pom.xml
+===================================================================
+--- src/web/app/pom.xml	(revision 15854)
++++ src/web/app/pom.xml	(working copy)
+@@ -433,6 +433,16 @@
+       </dependencies>
+     </profile>
+     <profile>
++      <id>geoscript-js</id>
++      <dependencies>
++        <dependency>
++          <groupId>org.geoserver.community</groupId>
++          <artifactId>geoscript-js</artifactId>
++          <version>${project.version}</version> 
++        </dependency>
++      </dependencies>
++    </profile>
++    <profile>
+       <id>dxf</id>
+       <dependencies>
+         <dependency>
