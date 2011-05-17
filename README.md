@@ -1,8 +1,8 @@
-== Setup
+## Setup
 
 These instructions assume you'll be running GeoServer from source with the GeoScript JS sources locally.
 
-=== Getting Rhino
+### Getting Rhino
 
 GeoScript JS requires Rhino 1.7R3.  Until this is available in the main Maven repository, you can build it yourself and put the jar in your local Maven repository.
 
@@ -17,7 +17,7 @@ Next, push the resulting `js.jar` into your local Maven repository.
 
     mvn install:install-file -Dfile=build/rhino1_7R3/js.jar -Dpackaging=jar -DgroupId=org.opengeo.rhino -DartifactId=rhino -Dversion=1.7R3
 
-=== Getting GeoServer
+### Getting GeoServer
 
 Create a place for the GeoServer sources and check out the trunk from Subversion.
 
@@ -26,26 +26,26 @@ Create a place for the GeoServer sources and check out the trunk from Subversion
     svn checkout http://svn.codehaus.org/geoserver/trunk
     cd trunk
 
-=== Getting the GeoScript JS Module
+### Getting the GeoScript JS Module
 
 Next you'll clone the GeoScript JS Module source with Git.
 
     git clone git://github.com/tschaub/geoserver-geoscript-js.git src/community/geoscript-js
 
-=== Adding GeoScript JS as a Community Module
+### Adding GeoScript JS as a Community Module
 
 Using your checkout of GeoServer from Subversion, you need to modify a couple `pom.xml` files to configure GeoScript JS as a community module.
 
     patch -p0 < src/community/geoscript-js/geoserver.patch
     
-=== Building
+### Building
 
 Use Maven to build GeoServer with the GeoScript JS Module.
 
     cd src
     mvn clean install -P geoscript-js,wps
 
-=== Running
+### Running
 
 The Maven Jetty plugin can be used to run web based modules:
 
