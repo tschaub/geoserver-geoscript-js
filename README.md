@@ -51,3 +51,7 @@ The Maven Jetty plugin can be used to run web based modules:
 
     cd src/web/app
     mvn jetty:run -Pgeoscript-js,wps -DGEOSERVER_DATA_DIR=../../../data/release/
+
+## Scripting WPS
+
+To script a new process, you just need to place `.js` files in a `scripts/processes` directory in your data directory.  See the examples directory for some sample process scripts.
