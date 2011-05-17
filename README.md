@@ -52,6 +52,10 @@ The Maven Jetty plugin can be used to run web based modules:
     cd src/web/app
     mvn jetty:run -Pgeoscript-js,wps -DGEOSERVER_DATA_DIR=../../../data/release/
 
+To run GeoServer from Eclipse, follow the GeoServer [Eclipse Guide](http://docs.geoserver.org/latest/en/developer/eclipse-guide/index.html).  When generating the Eclipse project, make sure to use the same profiles as for installing above:
+
+    mvn -P geoscript-js,wps eclipse:eclipse
+
 ## Scripting WPS
 
 To script a new process, you just need to place `.js` files in a `scripts/processes` directory in your data directory.  See the examples directory for some sample process scripts.

@@ -8,13 +8,9 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
-
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
-import org.mozilla.javascript.Script;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.Wrapper;
@@ -42,8 +38,6 @@ public class JavaScriptProcess implements Process{
             scope.initStandardObjects(cx, true);
             scope.installRequire(cx, new java.util.ArrayList(), false);
             FileReader reader = new FileReader(myScript);
-            /// Script script = cx.compileReader(reader, myScript.getName(), 1, null);
-            /// script.exec(cx, scope);
             cx.evaluateReader(scope, reader, myScript.getName(), 1, null);
         } catch (IOException e) {
             throw new RuntimeException("I/O error while loading process script...");
@@ -156,7 +150,7 @@ public class JavaScriptProcess implements Process{
                 ScriptableObject.putProperty(
                     obj, 
                     entry.getKey(), 
-                    cx.javaToJS(entry.getValue(), scope)
+                    Context.javaToJS(entry.getValue(), scope)
                 );
             }
         } finally { 
