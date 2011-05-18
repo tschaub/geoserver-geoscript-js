@@ -7,26 +7,16 @@ package org.geoserver.wps.scriptlet;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.mozilla.javascript.Context;
-import org.mozilla.javascript.Scriptable;
-import org.mozilla.javascript.ScriptableObject;
-
 import org.geoserver.platform.GeoServerExtensions;
 import org.geoserver.platform.GeoServerResourceLoader;
-import org.geotools.data.FeatureSource;
 import org.geotools.data.Parameter;
-import org.geotools.feature.FeatureCollection;
 import org.geotools.feature.NameImpl;
-import org.geotools.process.Process;
 import org.geotools.process.ProcessFactory;
 import org.geotools.text.Text;
-import org.opengis.coverage.grid.GridCoverage;
 import org.opengis.feature.type.Name;
 import org.opengis.util.InternationalString;
 
@@ -35,7 +25,7 @@ import org.opengis.util.InternationalString;
  * 
  * @author David Winslow <dwinslow@opengeo.org>
  */
-public class ScriptletProcessFactory implements ProcessFactory {
+public class JavaScriptProcessFactory implements ProcessFactory {
     public static final String JS_NAMESPACE = "js";
     public static final String SCRIPT_SEARCH_PATH = "scripts/processes/";
     private GeoServerResourceLoader resourceLoader = 
@@ -50,13 +40,15 @@ public class ScriptletProcessFactory implements ProcessFactory {
         } catch (IOException ioe) {
             // no, it's cool. we might have to handle a null return anyway.
         }
+        
+        FilenameFilter filter = new FilenameFilter() {
+        	public boolean accept(File f, String name) {
+        		return name.endsWith(".js");
+        	}
+        };
 
         if (scriptDirectory != null) {
-            for (String script : scriptDirectory.list(new FilenameFilter() {
-                public boolean accept(File f, String name) {
-                    return name.endsWith(".js");
-                }
-            })) {
+            for (String script : scriptDirectory.list(filter)) {
                 result.add(new NameImpl(JS_NAMESPACE, script.substring(0, script.length() - 3)));
             } 
         }
@@ -110,7 +102,7 @@ public class ScriptletProcessFactory implements ProcessFactory {
     }
 
     public InternationalString getTitle() {
-        return Text.text("JavaScript process provider");
+        return Text.text("GeoScript JS process provider");
     }
 
     public InternationalString getTitle(Name name) {
@@ -131,6 +123,7 @@ public class ScriptletProcessFactory implements ProcessFactory {
     }
 
     public String getVersion(Name name) {
+    	// TODO: support process version
         File script = findScript(name);
         return "1.0.0";
     }
