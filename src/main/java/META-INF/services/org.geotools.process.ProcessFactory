@@ -1,1 +1,1 @@
-org.geoserver.javascript.process.JavaScriptProcessFactory
+org.geoserver.geoscript.javascript.process.JavaScriptProcessFactory

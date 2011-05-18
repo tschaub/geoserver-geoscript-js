@@ -1,4 +1,4 @@
-package org.geoserver.javascript.web;
+package org.geoserver.geoscript.javascript.web;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -58,7 +58,7 @@ public class RhinoConsolePage extends GeoServerSecuredPage {
         return res;
     }
 
-    private static final Logger LOGGER = Logging.getLogger("org.geoserver.javascript.web");
+    private static final Logger LOGGER = Logging.getLogger("org.geoserver.geoscript.javascript.web");
     public RhinoConsolePage() {
         Context cx = Context.enter();
         scope = cx.initStandardObjects();

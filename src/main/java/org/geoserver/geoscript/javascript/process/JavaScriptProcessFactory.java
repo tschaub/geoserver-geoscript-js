@@ -3,7 +3,7 @@
  * This code is licensed under the GPL 2.0 license, available at the root
  * application directory.
  */
-package org.geoserver.javascript.process;
+package org.geoserver.geoscript.javascript.process;
 
 import java.io.File;
 import java.io.FilenameFilter;
