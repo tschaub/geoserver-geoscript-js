@@ -33,6 +33,7 @@ public class JavaScriptProcess implements Process{
     public JavaScriptProcess(File algorithm) {
         myScript = algorithm;
         Context cx = Context.enter();
+        cx.setLanguageVersion(170);
         try {
             scope = new Global(); // cx.initStandardObjects();
             scope.initStandardObjects(cx, true);
