@@ -1,3 +1,20 @@
+Index: src/community/pom.xml
+===================================================================
+--- src/community/pom.xml	(revision 15854)
++++ src/community/pom.xml	(working copy)
+@@ -118,6 +118,12 @@
+       </modules>
+     </profile>
+     <profile>
++      <id>geoscript-js</id>
++      <modules>
++        <module>geoscript-js</module>
++      </modules>
++    </profile>
++    <profile>
+       <id>hibernate</id>
+       <modules>
+         <module>hibernate</module>
 Index: src/web/app/pom.xml
 ===================================================================
 --- src/web/app/pom.xml	(revision 15854)
@@ -19,29 +36,12 @@ Index: src/web/app/pom.xml
        <id>dxf</id>
        <dependencies>
          <dependency>
-Index: src/community/pom.xml
-===================================================================
---- src/community/pom.xml	(revision 15854)
-+++ src/community/pom.xml	(working copy)
-@@ -118,6 +118,12 @@
-       </modules>
-     </profile>
-     <profile>
-+      <id>geoscript-js</id>
-+      <modules>
-+        <module>geoscript-js</module>
-+      </modules>
-+    </profile>
-+    <profile>
-       <id>hibernate</id>
-       <modules>
-         <module>hibernate</module>
 Index: data/release/scripts
 ===================================================================
 --- data/release/scripts	(revision 0)
 +++ data/release/scripts	(revision 0)
 @@ -0,0 +1 @@
-+link ../../src/community/geoscript-js/src/examples
++link ../../src/community/geoscript-js/examples
 \ No newline at end of file
 
 Property changes on: data/release/scripts
