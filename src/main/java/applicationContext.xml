@@ -29,6 +29,6 @@
         <property name="id" value="rhinoConsole"/>
         <property name="titleKey" value="RhinoConsolePage.title"/>
         <property name="descriptionKey" value="RhinoConsolePage.shortDescription"/>
-        <property name="componentClass" value="org.geoserver.web.scriptlet.RhinoConsolePage"/>
+        <property name="componentClass" value="org.geoserver.javascript.web.RhinoConsolePage"/>
     </bean>
 </beans>
