@@ -1,4 +1,5 @@
-/* Copyright (c) 2001 - 2007 TOPP - www.openplans.org. All rights reserved.
+/**
+ * Copyright (c) 2001 - 2011 OpenPlans - www.openplans.org. All rights reserved.
  * This code is licensed under the GPL 2.0 license, available at the root
  * application directory.
  */
@@ -7,7 +8,9 @@ package org.geoserver.javascript.process;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
@@ -16,6 +19,7 @@ import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.Wrapper;
 import org.mozilla.javascript.tools.shell.Global;
 
+import org.geoserver.geoscript.javascript.GeoScriptModules;
 import org.geotools.data.Parameter;
 import org.geotools.process.Process;
 import org.geotools.text.Text;
@@ -35,13 +39,14 @@ public class JavaScriptProcess implements Process{
         Context cx = Context.enter();
         cx.setLanguageVersion(170);
         try {
-            scope = new Global(); // cx.initStandardObjects();
+            scope = new Global();
             scope.initStandardObjects(cx, true);
-            scope.installRequire(cx, new java.util.ArrayList(), false);
+            String modulePath = GeoScriptModules.class.getResource("modules").toURI().toString();
+            scope.installRequire(cx, (List<String>) Arrays.asList(modulePath), false);
             FileReader reader = new FileReader(myScript);
             cx.evaluateReader(scope, reader, myScript.getName(), 1, null);
-        } catch (IOException e) {
-            throw new RuntimeException("I/O error while loading process script...");
+        } catch (Exception e) {
+            throw new RuntimeException("I/O error while loading process script...", e);
         } finally {
             Context.exit();
         }
