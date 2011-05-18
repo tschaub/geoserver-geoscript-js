@@ -11,7 +11,6 @@ Contents:
 
    install
    hello
-   template
    catalog
    colorramp
    recolor
