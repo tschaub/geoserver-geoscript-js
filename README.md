@@ -36,7 +36,7 @@ Next you'll clone the GeoScript JS Module source with Git.
 
 Using your checkout of GeoServer from Subversion, you need to modify a couple `pom.xml` files to configure GeoScript JS as a community module.
 
-    patch -p0 < src/community/geoscript-js/geoserver.patch
+    patch -p0 < src/community/geoscript-js/etc/geoserver.patch
     
 ### Building
 
