@@ -9,7 +9,7 @@
  *     http://localhost:8080/geoserver/ows?service=wps&version=1.0.0&request=Execute&Identifier=js:add&DataInputs=rhs=1;lhs=2&RawDataOutput=sum
  */
 
-metadata = {
+exports.metadata = {
     title: "Addition Example",
     description: "Example script that adds two numbers together",
     inputs: {
@@ -19,10 +19,10 @@ metadata = {
     outputs: {
         sum: java.lang.Integer
     }
-}
+};
 
-function process(input) {
+exports.process = function(input) {
     return {
         sum: (input.lhs + input.rhs)
     };
-}
+};

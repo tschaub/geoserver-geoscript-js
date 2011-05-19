@@ -6,8 +6,6 @@
 package org.geoserver.geoscript.javascript.process;
 
 import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -18,6 +16,7 @@ import org.mozilla.javascript.Function;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.Wrapper;
+import org.mozilla.javascript.commonjs.module.Require;
 import org.mozilla.javascript.tools.shell.Global;
 
 import org.geoserver.geoscript.javascript.GeoScriptModules;
@@ -30,12 +29,14 @@ import org.opengis.util.ProgressListener;
 public class JavaScriptProcess implements Process{
     private File myScript;
     private Global scope;
+    private Scriptable exports;
 
     /**
      * Constructs a new process that wraps a script input file
      * @param algorithm the javascript input file
      */
     public JavaScriptProcess(File algorithm) {
+    	// TODO: rework this to pass around just module ids
         myScript = algorithm;
         Context cx = Context.enter();
         cx.setLanguageVersion(170);
@@ -47,17 +48,13 @@ public class JavaScriptProcess implements Process{
         } catch (URISyntaxException e) {
             throw new RuntimeException("Trouble evaluating module path.", e);
         }
-//        Require require = scope.installRequire(cx, (List<String>) Arrays.asList(modulePath), false);
-//        require.requireMain(cx, algorithm.getAbsolutePath());
-        scope.installRequire(cx, (List<String>) Arrays.asList(modulePath), false);
-        try {
-            FileReader reader = new FileReader(myScript);
-            cx.evaluateReader(scope, reader, myScript.getName(), 1, null);
-        } catch (IOException e) {
-            throw new RuntimeException("I/O error while loading process script...", e);
-        } finally {
-            Context.exit();
-        }
+        String mainDir = myScript.getParent();
+        String mainName = myScript.getName();
+        String mainId = mainName.substring(0, mainName.length()-3);
+        Require require = scope.installRequire(
+        	cx, (List<String>) Arrays.asList(modulePath, mainDir), false
+        );
+        exports = require.requireMain(cx, mainId);
     }
 
     public Map<String, Object> execute(Map<String, Object> input,
@@ -65,7 +62,7 @@ public class JavaScriptProcess implements Process{
 
         Context cx = Context.enter();
         Map<String,Object> results = null;
-        Object process = scope.get("process", scope);
+        Object process = exports.get("process", exports);
         try {
             if (process instanceof Function) {
                 Function processFn = (Function)process;
@@ -86,7 +83,7 @@ public class JavaScriptProcess implements Process{
     }
 
     Map<String, Object> getMetadata() { 
-        Object metadataObj = scope.get("metadata", scope);
+        Object metadataObj = exports.get("metadata", exports);
         if (metadataObj instanceof Scriptable) {
             return jsObjectToMap((Scriptable)metadataObj);
         } else {
@@ -95,7 +92,7 @@ public class JavaScriptProcess implements Process{
     }
 
     Map<String, Parameter<?>> getParameterInfo() {
-        Object metadataObj = scope.get("metadata", scope);
+        Object metadataObj = exports.get("metadata", exports);
         Map<String, Object> jsParams = null;
 
         if (metadataObj instanceof Scriptable) {
@@ -126,7 +123,7 @@ public class JavaScriptProcess implements Process{
     }
 
     Map<String, Parameter<?>> getResultInfo() {
-        Object metadataObj = scope.get("metadata", scope);
+        Object metadataObj = exports.get("metadata", exports);
         Map<String, Object> jsParams = null;
 
         if (metadataObj instanceof Scriptable) {
