@@ -8,6 +8,7 @@ package org.geoserver.geoscript.javascript.process;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -38,14 +39,19 @@ public class JavaScriptProcess implements Process{
         myScript = algorithm;
         Context cx = Context.enter();
         cx.setLanguageVersion(170);
+        scope = new Global();
+        scope.initStandardObjects(cx, true);
+        String modulePath;
         try {
-            scope = new Global();
-            scope.initStandardObjects(cx, true);
-            String modulePath = GeoScriptModules.class.getResource("modules").toURI().toString();
-            scope.installRequire(cx, (List<String>) Arrays.asList(modulePath), false);
+            modulePath = GeoScriptModules.class.getResource("modules").toURI().toString();
+        } catch (URISyntaxException e) {
+            throw new RuntimeException("Trouble evaluating module path.", e);
+        }
+        scope.installRequire(cx, (List<String>) Arrays.asList(modulePath), false);
+        try {
             FileReader reader = new FileReader(myScript);
             cx.evaluateReader(scope, reader, myScript.getName(), 1, null);
-        } catch (Exception e) {
+        } catch (IOException e) {
             throw new RuntimeException("I/O error while loading process script...", e);
         } finally {
             Context.exit();
