@@ -47,6 +47,8 @@ public class JavaScriptProcess implements Process{
         } catch (URISyntaxException e) {
             throw new RuntimeException("Trouble evaluating module path.", e);
         }
+//        Require require = scope.installRequire(cx, (List<String>) Arrays.asList(modulePath), false);
+//        require.requireMain(cx, algorithm.getAbsolutePath());
         scope.installRequire(cx, (List<String>) Arrays.asList(modulePath), false);
         try {
             FileReader reader = new FileReader(myScript);
