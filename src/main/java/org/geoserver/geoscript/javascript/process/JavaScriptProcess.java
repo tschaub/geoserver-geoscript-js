@@ -32,12 +32,11 @@ public class JavaScriptProcess implements Process{
     private Scriptable exports;
 
     /**
-     * Constructs a new process that wraps a script input file
-     * @param algorithm the javascript input file
+     * Constructs a new process that wraps a JavaScript module.
+     * @param processDir The directory containing process modules
+     * @param name The process name
      */
-    public JavaScriptProcess(File algorithm) {
-    	// TODO: rework this to pass around just module ids
-        myScript = algorithm;
+    public JavaScriptProcess(File processDir, String name) {
         Context cx = Context.enter();
         cx.setLanguageVersion(170);
         scope = new Global();
@@ -48,13 +47,13 @@ public class JavaScriptProcess implements Process{
         } catch (URISyntaxException e) {
             throw new RuntimeException("Trouble evaluating module path.", e);
         }
-        String mainDir = myScript.getParent();
-        String mainName = myScript.getName();
-        String mainId = mainName.substring(0, mainName.length()-3);
+        processDir.toURI().toString();
         Require require = scope.installRequire(
-        	cx, (List<String>) Arrays.asList(modulePath, mainDir), false
+                cx, 
+                (List<String>) Arrays.asList(modulePath, processDir.toURI().toString()), 
+                false
         );
-        exports = require.requireMain(cx, mainId);
+        exports = require.requireMain(cx, name);
     }
 
     public Map<String, Object> execute(Map<String, Object> input,
