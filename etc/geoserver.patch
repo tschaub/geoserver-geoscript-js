@@ -1,10 +1,10 @@
 Index: src/community/pom.xml
 ===================================================================
---- src/community/pom.xml	(revision 15753)
+--- src/community/pom.xml	(revision 15938)
 +++ src/community/pom.xml	(working copy)
-@@ -118,6 +118,12 @@
-       </modules>
-     </profile>
+@@ -46,6 +46,12 @@
+   <!-- profiles for individual modules -->
+   <profiles>
      <profile>
 +      <id>geoscript-js</id>
 +      <modules>
@@ -12,14 +12,14 @@ Index: src/community/pom.xml
 +      </modules>
 +    </profile>
 +    <profile>
-       <id>hibernate</id>
+       <id>proxy</id>
        <modules>
-         <module>hibernate</module>
+         <module>proxy</module>
 Index: src/web/app/pom.xml
 ===================================================================
---- src/web/app/pom.xml	(revision 15753)
+--- src/web/app/pom.xml	(revision 15938)
 +++ src/web/app/pom.xml	(working copy)
-@@ -433,6 +433,16 @@
+@@ -413,6 +413,16 @@
        </dependencies>
      </profile>
      <profile>
