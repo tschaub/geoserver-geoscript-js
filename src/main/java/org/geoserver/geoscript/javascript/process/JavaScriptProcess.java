@@ -24,12 +24,13 @@ import org.geotools.data.Parameter;
 import org.geotools.process.Process;
 import org.geotools.text.Text;
 
+import org.opengis.feature.type.AttributeDescriptor;
+import org.opengis.util.InternationalString;
 import org.opengis.util.ProgressListener;
 
 public class JavaScriptProcess implements Process{
-    private File myScript;
     private Global scope;
-    private Scriptable exports;
+    private Scriptable jsProcess;
 
     /**
      * Constructs a new process that wraps a JavaScript module.
@@ -53,7 +54,16 @@ public class JavaScriptProcess implements Process{
                 (List<String>) Arrays.asList(modulePath, processDir.toURI().toString()), 
                 false
         );
-        exports = require.requireMain(cx, name);
+        Scriptable exports = require.requireMain(cx, name);
+        Object jsObject = exports.get("process", exports);
+        if (jsObject instanceof Scriptable) {
+        	jsProcess = (Scriptable) jsObject;
+        } else {
+        	throw new RuntimeException(
+        		"Script for process '" + name + "' doesn't export a process."
+        	);
+        }
+        
     }
 
     public Map<String, Object> execute(Map<String, Object> input,
@@ -61,17 +71,16 @@ public class JavaScriptProcess implements Process{
 
         Context cx = Context.enter();
         Map<String,Object> results = null;
-        Object process = exports.get("process", exports);
+        Object runner = jsProcess.get("run", jsProcess);
         try {
-            if (process instanceof Function) {
-                Function processFn = (Function)process;
+            if (runner instanceof Function) {
+                Function processFn = (Function)runner;
                 Object[] args = {mapToJsObject(input, scope)};
                 Object result = processFn.call(cx, scope, scope, args);
                 results = jsObjectToMap((Scriptable)result);
             } else {
                 throw new RuntimeException(
-                    "Script for process: " + myScript.getName() + 
-                    " is not a valid process script."
+                    "Process for 'TODO: name' has no run method."
                 );
             }
         } finally { 
@@ -81,75 +90,58 @@ public class JavaScriptProcess implements Process{
         return results;
     }
 
-    Map<String, Object> getMetadata() { 
-        Object metadataObj = exports.get("metadata", exports);
-        if (metadataObj instanceof Scriptable) {
-            return jsObjectToMap((Scriptable)metadataObj);
-        } else {
-            return null;
-        }
+    public InternationalString getTitle() {
+        Object title = jsProcess.get("title", jsProcess);
+        return Text.text(title.toString());
+    }
+
+    public InternationalString getDescription() {
+        Object description = jsProcess.get("description", jsProcess);
+        return Text.text(description.toString());
     }
 
     Map<String, Parameter<?>> getParameterInfo() {
-        Object metadataObj = exports.get("metadata", exports);
-        Map<String, Object> jsParams = null;
+        Scriptable inputs = (Scriptable) jsProcess.get("inputs", jsProcess);
 
-        if (metadataObj instanceof Scriptable) {
-            Scriptable metadata = (Scriptable) metadataObj;
-            Object nativeParamsObj = metadata.get("inputs", metadata);
-            if (nativeParamsObj instanceof Scriptable) 
-                jsParams = jsObjectToMap((Scriptable)nativeParamsObj);
-        } 
-        
-        if (jsParams == null) {
-            return new HashMap<String, Parameter<?>>();
-        }
+        Map<String, Parameter<?>> parameters = new HashMap<String, Parameter<?>>();
 
-        Map<String, Parameter<?>> gtParams = new HashMap<String, Parameter<?>>();
-        for (Map.Entry<String,Object> entry : jsParams.entrySet()) {
-            gtParams.put(
-                entry.getKey(), 
-                new Parameter(
-                    entry.getKey(), 
-                    (Class)entry.getValue(),
-                    Text.text(entry.getKey()),
-                    Text.text(entry.getKey())
-                )
+        for (Object key : inputs.getIds()) {
+            Scriptable field = (Scriptable) inputs.get((String)key, inputs);
+            // TODO: make this less offensive
+            AttributeDescriptor descriptor = (AttributeDescriptor) ((Wrapper) field.get("_field", field)).unwrap();
+
+            Parameter parameter = new Parameter(
+            	(String)key,
+            	descriptor.getType().getBinding(),
+            	descriptor.getName().getLocalPart(),
+            	descriptor.getType().getDescription().toString()
             );
+            parameters.put((String)key, parameter);
         }
 
-        return gtParams;
+        return parameters;
     }
 
     Map<String, Parameter<?>> getResultInfo() {
-        Object metadataObj = exports.get("metadata", exports);
-        Map<String, Object> jsParams = null;
+        Scriptable outputs = (Scriptable) jsProcess.get("outputs", jsProcess);
 
-        if (metadataObj instanceof Scriptable) {
-            Scriptable metadata = (Scriptable) metadataObj;
-            Object nativeParamsObj = metadata.get("outputs", metadata);
-            if (nativeParamsObj instanceof Scriptable) 
-                jsParams = jsObjectToMap((Scriptable)nativeParamsObj);
-        } 
-        
-        if (jsParams == null) {
-            return new HashMap<String, Parameter<?>>();
-        }
+        Map<String, Parameter<?>> parameters = new HashMap<String, Parameter<?>>();
 
-        Map<String, Parameter<?>> gtParams = new HashMap<String, Parameter<?>>();
-        for (Map.Entry<String,Object> entry : jsParams.entrySet()) {
-            gtParams.put(
-                entry.getKey(), 
-                new Parameter(
-                    entry.getKey(), 
-                    (Class)entry.getValue(),
-                    Text.text(entry.getKey()),
-                    Text.text(entry.getKey())
-                )
+        for (Object key : outputs.getIds()) {
+            Scriptable field = (Scriptable) outputs.get((String)key, outputs);
+            // TODO: make this less offensive
+            AttributeDescriptor descriptor = (AttributeDescriptor) ((Wrapper) field.get("_field", field)).unwrap();
+
+            Parameter parameter = new Parameter(
+            	(String)key,
+            	descriptor.getType().getBinding(),
+            	descriptor.getName().getLocalPart(),
+            	descriptor.getType().getDescription().toString()
             );
+            parameters.put((String)key, parameter);
         }
 
-        return gtParams;
+        return parameters;
     }
 
     private static Scriptable mapToJsObject(Map<String,Object> map, Scriptable scope) {
@@ -180,8 +172,6 @@ public class JavaScriptProcess implements Process{
                 map.put(id, ((Wrapper)value).unwrap());
             } else if (value instanceof Function) {
                 // ignore functions?
-            } else if (value instanceof Scriptable) {
-                map.put(id, jsObjectToMap((Scriptable)value));
             } else {
                 map.put(id, value);
             }

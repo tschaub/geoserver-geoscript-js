@@ -73,9 +73,8 @@ public class JavaScriptProcessFactory implements ProcessFactory {
     }
 
     public InternationalString getDescription(Name name) {
-        // TODO: Implement a description mechanism
         JavaScriptProcess process = create(name);
-        return Text.text(process.getMetadata().get("description").toString());
+        return process.getDescription();
     }
 
     public boolean isAvailable() {
@@ -91,8 +90,8 @@ public class JavaScriptProcessFactory implements ProcessFactory {
     }
 
     public InternationalString getTitle(Name name) {
-        JavaScriptProcess script = create(name);
-        return Text.text(script.getMetadata().get("title").toString());
+        JavaScriptProcess process = create(name);
+        return process.getTitle();
     }
 
     public String getName(Name name) {

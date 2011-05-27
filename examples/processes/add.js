@@ -3,26 +3,34 @@
  *     http://localhost:8080/geoserver/ows?service=wps&version=1.0.0&request=DescribeProcess&Identifier=js:add
  *     
  * Execute with the following for a full response document:
- *     http://localhost:8080/geoserver/ows?service=wps&version=1.0.0&request=Execute&Identifier=js:add&DataInputs=rhs=1;lhs=2&ResponseDocument=sum
+ *     http://localhost:8080/geoserver/ows?service=wps&version=1.0.0&request=Execute&Identifier=js:add&DataInputs=first=1;second=2&ResponseDocument=sum
  *
  * Or for just the raw data output:
- *     http://localhost:8080/geoserver/ows?service=wps&version=1.0.0&request=Execute&Identifier=js:add&DataInputs=rhs=1;lhs=2&RawDataOutput=sum
+ *     http://localhost:8080/geoserver/ows?service=wps&version=1.0.0&request=Execute&Identifier=js:add&DataInputs=first=1;second=2&RawDataOutput=sum
  */
 
-exports.metadata = {
-    title: "Addition Example",
-    description: "Example script that adds two numbers together",
-    inputs: {
-        lhs: java.lang.Integer,
-        rhs: java.lang.Integer
-    },
-    outputs: {
-        sum: java.lang.Integer
-    }
-};
+var Process = require("geoscript/process").Process;
 
-exports.process = function(input) {
-    return {
-        sum: (input.lhs + input.rhs)
-    };
-};
+exports.process = new Process({
+	title: "JavaScript Addition Process",
+	description: "Adds two integers.",
+	inputs: {
+		first: {
+			type: "Integer",
+			description: "The first operand."
+		},
+		second: {
+			type: "Integer",
+			description: "The second operand."
+		}
+	},
+	outputs: {
+		sum: {
+			type: "Integer",
+			description: "The sum of the two inputs"
+		}
+	},
+	run: function(inputs) {
+		return {sum: inputs.first + inputs.second};
+	}
+});
