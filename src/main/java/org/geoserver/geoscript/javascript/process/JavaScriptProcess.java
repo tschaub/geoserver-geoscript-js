@@ -56,6 +56,7 @@ public class JavaScriptProcess implements Process{
         );
         Scriptable exports = require.requireMain(cx, name);
         Object jsObject = exports.get("process", exports);
+        Context.exit();
         if (jsObject instanceof Scriptable) {
             jsProcess = (Scriptable) jsObject;
         } else {
