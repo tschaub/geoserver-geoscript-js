@@ -57,13 +57,12 @@ public class JavaScriptProcess implements Process{
         Scriptable exports = require.requireMain(cx, name);
         Object jsObject = exports.get("process", exports);
         if (jsObject instanceof Scriptable) {
-        	jsProcess = (Scriptable) jsObject;
+            jsProcess = (Scriptable) jsObject;
         } else {
-        	throw new RuntimeException(
-        		"Script for process '" + name + "' doesn't export a process."
-        	);
+            throw new RuntimeException(
+                "Script for process '" + name + "' doesn't export a process."
+            );
         }
-        
     }
 
     public Map<String, Object> execute(Map<String, Object> input,
@@ -111,10 +110,10 @@ public class JavaScriptProcess implements Process{
             AttributeDescriptor descriptor = (AttributeDescriptor) ((Wrapper) field.get("_field", field)).unwrap();
 
             Parameter parameter = new Parameter(
-            	(String)key,
-            	descriptor.getType().getBinding(),
-            	descriptor.getName().getLocalPart(),
-            	descriptor.getType().getDescription().toString()
+                (String)key,
+                descriptor.getType().getBinding(),
+                descriptor.getName().getLocalPart(),
+                descriptor.getType().getDescription().toString()
             );
             parameters.put((String)key, parameter);
         }
@@ -133,10 +132,10 @@ public class JavaScriptProcess implements Process{
             AttributeDescriptor descriptor = (AttributeDescriptor) ((Wrapper) field.get("_field", field)).unwrap();
 
             Parameter parameter = new Parameter(
-            	(String)key,
-            	descriptor.getType().getBinding(),
-            	descriptor.getName().getLocalPart(),
-            	descriptor.getType().getDescription().toString()
+                (String)key,
+                descriptor.getType().getBinding(),
+                descriptor.getName().getLocalPart(),
+                descriptor.getType().getDescription().toString()
             );
             parameters.put((String)key, parameter);
         }

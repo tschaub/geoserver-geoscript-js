@@ -12,25 +12,25 @@
 var Process = require("geoscript/process").Process;
 
 exports.process = new Process({
-	title: "JavaScript Addition Process",
-	description: "Adds two integers.",
-	inputs: {
-		first: {
-			type: "Integer",
-			description: "The first operand."
-		},
-		second: {
-			type: "Integer",
-			description: "The second operand."
-		}
-	},
-	outputs: {
-		sum: {
-			type: "Integer",
-			description: "The sum of the two inputs"
-		}
-	},
-	run: function(inputs) {
-		return {sum: inputs.first + inputs.second};
-	}
+    title: "JavaScript Addition Process",
+    description: "Adds two integers.",
+    inputs: {
+        first: {
+            type: "Integer",
+            description: "The first operand."
+        },
+        second: {
+            type: "Integer",
+            description: "The second operand."
+        }
+    },
+    outputs: {
+        sum: {
+            type: "Integer",
+            description: "The sum of the two inputs"
+        }
+    },
+    run: function(inputs) {
+        return {sum: inputs.first + inputs.second};
+    }
 });
