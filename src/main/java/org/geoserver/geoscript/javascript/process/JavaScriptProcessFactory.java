@@ -81,6 +81,7 @@ public class JavaScriptProcessFactory implements ProcessFactory {
         return true; 
     }
 
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     public java.util.Map getImplementationHints() {
         return java.util.Collections.EMPTY_MAP;
     }

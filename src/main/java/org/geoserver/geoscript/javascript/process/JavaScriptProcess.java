@@ -99,49 +99,47 @@ public class JavaScriptProcess implements Process{
         Object description = jsProcess.get("description", jsProcess);
         return Text.text(description.toString());
     }
+    
+    private Parameter<?> getParameterFromField(String id, Scriptable field) {
+        Object _field = field.get("_field", field);
+        AttributeDescriptor descriptor = (AttributeDescriptor) ((Wrapper) _field).unwrap();
+
+        String title = null;
+        Object titleObj = field.get("title", field);
+        if (titleObj instanceof String) {
+            title = (String) titleObj;
+        } else {
+            title = descriptor.getLocalName();
+        }
+        
+        @SuppressWarnings("unchecked")
+        Parameter<?> parameter = new Parameter<Object>(
+            id,
+            (Class<Object>) descriptor.getType().getBinding(),
+            title,
+            descriptor.getType().getDescription().toString()
+        );
+        return parameter;
+    }
+    
+    private Map<String, Parameter<?>> getParametersFromObject(Scriptable obj) {
+        Map<String, Parameter<?>> parameters = new HashMap<String, Parameter<?>>();
+        for (Object key : obj.getIds()) {
+            String id = (String) key;
+            Scriptable field = (Scriptable) obj.get(id, obj);
+            parameters.put(id, getParameterFromField(id, field));
+        }
+        return parameters;
+    }
 
     Map<String, Parameter<?>> getParameterInfo() {
         Scriptable inputs = (Scriptable) jsProcess.get("inputs", jsProcess);
-
-        Map<String, Parameter<?>> parameters = new HashMap<String, Parameter<?>>();
-
-        for (Object key : inputs.getIds()) {
-            Scriptable field = (Scriptable) inputs.get((String)key, inputs);
-            // TODO: make this less offensive
-            AttributeDescriptor descriptor = (AttributeDescriptor) ((Wrapper) field.get("_field", field)).unwrap();
-
-            Parameter parameter = new Parameter(
-                (String)key,
-                descriptor.getType().getBinding(),
-                descriptor.getName().getLocalPart(),
-                descriptor.getType().getDescription().toString()
-            );
-            parameters.put((String)key, parameter);
-        }
-
-        return parameters;
+        return getParametersFromObject(inputs);
     }
 
     Map<String, Parameter<?>> getResultInfo() {
         Scriptable outputs = (Scriptable) jsProcess.get("outputs", jsProcess);
-
-        Map<String, Parameter<?>> parameters = new HashMap<String, Parameter<?>>();
-
-        for (Object key : outputs.getIds()) {
-            Scriptable field = (Scriptable) outputs.get((String)key, outputs);
-            // TODO: make this less offensive
-            AttributeDescriptor descriptor = (AttributeDescriptor) ((Wrapper) field.get("_field", field)).unwrap();
-
-            Parameter parameter = new Parameter(
-                (String)key,
-                descriptor.getType().getBinding(),
-                descriptor.getName().getLocalPart(),
-                descriptor.getType().getDescription().toString()
-            );
-            parameters.put((String)key, parameter);
-        }
-
-        return parameters;
+        return getParametersFromObject(outputs);
     }
 
     private static Scriptable mapToJsObject(Map<String,Object> map, Scriptable scope) {
