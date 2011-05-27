@@ -13,20 +13,23 @@ var Process = require("geoscript/process").Process;
 
 exports.process = new Process({
     title: "JavaScript Addition Process",
-    description: "Adds two integers.",
+    description: "Process that accepts two numbers and returns their sum.",
     inputs: {
         first: {
-            type: "Integer",
+            type: "Float",
+            title:"First Operand",
             description: "The first operand."
         },
         second: {
-            type: "Integer",
+            type: "Float",
+            title: "Second Operand",
             description: "The second operand."
         }
     },
     outputs: {
         sum: {
-            type: "Integer",
+            type: "Float",
+            title: "Sum",
             description: "The sum of the two inputs"
         }
     },

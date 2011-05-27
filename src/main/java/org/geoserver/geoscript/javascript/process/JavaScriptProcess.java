@@ -11,6 +11,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
+
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.Scriptable;
@@ -23,6 +25,7 @@ import org.geoserver.geoscript.javascript.GeoScriptModules;
 import org.geotools.data.Parameter;
 import org.geotools.process.Process;
 import org.geotools.text.Text;
+import org.geotools.util.logging.Logging;
 
 import org.opengis.feature.type.AttributeDescriptor;
 import org.opengis.util.InternationalString;
@@ -31,6 +34,8 @@ import org.opengis.util.ProgressListener;
 public class JavaScriptProcess implements Process{
     private Global scope;
     private Scriptable jsProcess;
+    public String identifier;
+    static Logger LOGGER = Logging.getLogger("org.geoserver.geoscript.javascript");
 
     /**
      * Constructs a new process that wraps a JavaScript module.
@@ -38,6 +43,7 @@ public class JavaScriptProcess implements Process{
      * @param name The process name
      */
     public JavaScriptProcess(File processDir, String name) {
+        identifier = name;
         Context cx = Context.enter();
         cx.setLanguageVersion(170);
         scope = new Global();
@@ -91,13 +97,24 @@ public class JavaScriptProcess implements Process{
     }
 
     public InternationalString getTitle() {
-        Object title = jsProcess.get("title", jsProcess);
-        return Text.text(title.toString());
+        Object titleObj = jsProcess.get("title", jsProcess);
+        String title;
+        if (titleObj instanceof String) {
+            title = (String) titleObj;
+        } else {
+            LOGGER.warning("Process '" + identifier + "' missing required title.");
+            title = identifier;
+        }
+        return Text.text(title);
     }
 
     public InternationalString getDescription() {
-        Object description = jsProcess.get("description", jsProcess);
-        return Text.text(description.toString());
+        Object descriptionObj = jsProcess.get("description", jsProcess);
+        InternationalString description = null;
+        if (descriptionObj instanceof String) {
+            description = Text.text((String) descriptionObj);
+        }
+        return description;
     }
     
     private Parameter<?> getParameterFromField(String id, Scriptable field) {
@@ -109,7 +126,17 @@ public class JavaScriptProcess implements Process{
         if (titleObj instanceof String) {
             title = (String) titleObj;
         } else {
-            title = descriptor.getLocalName();
+            LOGGER.warning("Field '" + id + "' from process '" + identifier + "' missing required title.");
+            title = identifier;
+        }
+        
+        InternationalString descriptionObj = descriptor.getType().getDescription();
+        String description;
+        if (descriptionObj != null) {
+            description = descriptionObj.toString();
+        } else {
+            // spec says optional, but required for Parameter
+            description = id;
         }
         
         @SuppressWarnings("unchecked")
@@ -117,7 +144,7 @@ public class JavaScriptProcess implements Process{
             id,
             (Class<Object>) descriptor.getType().getBinding(),
             title,
-            descriptor.getType().getDescription().toString()
+            description
         );
         return parameter;
     }

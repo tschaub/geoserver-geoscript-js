@@ -39,14 +39,13 @@ public class JavaScriptProcessFactory implements ProcessFactory {
         try {
             scriptDirectory = resourceLoader.findOrCreateDirectory(SCRIPT_SEARCH_PATH);
         } catch (IOException ioe) {
-            LOGGER.log(Level.WARNING, "trouble getting dir", ioe);
+            LOGGER.log(Level.WARNING, "Trouble accessing or creating directory.", ioe);
         }
     }
 
     
     public Set<Name> getNames() {
         Set<Name> result = new HashSet<Name>();
-        
         
         FilenameFilter filter = new FilenameFilter() {
             public boolean accept(File f, String name) {
