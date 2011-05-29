@@ -77,19 +77,21 @@ public class JavaScriptProcess implements Process{
             ProgressListener monitor) {
 
         Context cx = Context.enter();
+        Scriptable exports = (Scriptable) require.call(cx, scope, require, new String[] {"geoserver/process"});
+        Object executeWrapperObj = (Scriptable) exports.get("execute", exports);
+        Function executeWrapper;
+        if (executeWrapperObj instanceof Function) {
+        	executeWrapper = (Function) executeWrapperObj;
+        } else {
+        	throw new RuntimeException(
+        		"Can't find execute method in geoserver/process module."
+        	);
+        }
         Map<String,Object> results = null;
-        Object runner = jsProcess.get("run", jsProcess);
+        Object[] args = {jsProcess, mapToJsObject(input, scope)};
         try {
-            if (runner instanceof Function) {
-                Function processFn = (Function)runner;
-                Object[] args = {mapToJsObject(input, scope)};
-                Object result = processFn.call(cx, scope, scope, args);
-                results = jsObjectToMap((Scriptable)result);
-            } else {
-                throw new RuntimeException(
-                    "Process for 'TODO: name' has no run method."
-                );
-            }
+            Object result = executeWrapper.call(cx, scope, scope, args);
+            results = jsObjectToMap((Scriptable)result);
         } finally { 
             Context.exit();
         }
