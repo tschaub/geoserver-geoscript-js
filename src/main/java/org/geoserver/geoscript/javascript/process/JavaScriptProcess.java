@@ -49,6 +49,9 @@ public class JavaScriptProcess implements Process{
         cx.setLanguageVersion(170);
         scope = new Global();
         scope.initStandardObjects(cx, true);
+        // allow logging from js modules
+        Object wrappedLogger = Context.javaToJS(LOGGER, scope);
+        ScriptableObject.putProperty(scope, "LOGGER", wrappedLogger);        
         String modulePath;
         try {
             modulePath = GeoScriptModules.class.getResource("modules").toURI().toString();
