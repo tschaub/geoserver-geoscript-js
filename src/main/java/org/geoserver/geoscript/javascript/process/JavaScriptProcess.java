@@ -33,6 +33,7 @@ import org.opengis.util.ProgressListener;
 
 public class JavaScriptProcess implements Process{
     private Global scope;
+    private Require require;
     private Scriptable jsProcess;
     public String identifier;
     static Logger LOGGER = Logging.getLogger("org.geoserver.geoscript.javascript");
@@ -55,10 +56,10 @@ public class JavaScriptProcess implements Process{
             throw new RuntimeException("Trouble evaluating module path.", e);
         }
         processDir.toURI().toString();
-        Require require = scope.installRequire(
-                cx, 
-                (List<String>) Arrays.asList(modulePath, processDir.toURI().toString()), 
-                false
+        require = scope.installRequire(
+        	cx, 
+            (List<String>) Arrays.asList(modulePath, processDir.toURI().toString()), 
+            false
         );
         Scriptable exports = require.requireMain(cx, name);
         Object jsObject = exports.get("process", exports);
