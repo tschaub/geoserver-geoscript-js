@@ -60,7 +60,7 @@ public class JavaScriptProcess implements Process{
         }
         processDir.toURI().toString();
         require = scope.installRequire(
-        	cx, 
+            cx, 
             (List<String>) Arrays.asList(modulePath, processDir.toURI().toString()), 
             false
         );
@@ -84,11 +84,11 @@ public class JavaScriptProcess implements Process{
         Object executeWrapperObj = (Scriptable) exports.get("execute", exports);
         Function executeWrapper;
         if (executeWrapperObj instanceof Function) {
-        	executeWrapper = (Function) executeWrapperObj;
+            executeWrapper = (Function) executeWrapperObj;
         } else {
-        	throw new RuntimeException(
-        		"Can't find execute method in geoserver/process module."
-        	);
+            throw new RuntimeException(
+                "Can't find execute method in geoserver/process module."
+            );
         }
         Map<String,Object> results = null;
         Object[] args = {jsProcess, mapToJsObject(input, scope)};
