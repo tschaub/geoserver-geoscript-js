@@ -2,4 +2,5 @@ target
 .classpath
 .project
 .settings
-src/main/resources/org/geoserver/geoscript/javascript/modules/
+src/main/resources/org/geoserver/geoscript/javascript/modules/geoscript.js
+src/main/resources/org/geoserver/geoscript/javascript/modules/geoscript/
