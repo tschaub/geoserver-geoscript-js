@@ -54,7 +54,7 @@ public class JavaScriptProcess implements Process{
         ScriptableObject.putProperty(scope, "LOGGER", wrappedLogger);        
         String modulePath;
         try {
-            modulePath = GeoScriptModules.class.getResource("modules").toURI().toString();
+            modulePath = GeoScriptModules.getModulePath();
         } catch (URISyntaxException e) {
             throw new RuntimeException("Trouble evaluating module path.", e);
         }
