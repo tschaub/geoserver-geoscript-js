@@ -48,8 +48,8 @@
             <version>${gt.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.opengeo.rhino</groupId>
-            <artifactId>rhino</artifactId>
+            <groupId>rhino</groupId>
+            <artifactId>js</artifactId>
             <version>1.7R3</version>
         </dependency>
         <dependency>
