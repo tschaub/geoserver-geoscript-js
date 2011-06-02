@@ -16,6 +16,7 @@ import org.apache.wicket.model.Model;
 import org.apache.wicket.model.PropertyModel;
 
 import org.mozilla.javascript.Context;
+import org.mozilla.javascript.EvaluatorException;
 import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.WrappedException;
 
@@ -40,9 +41,8 @@ public class RhinoConsolePage extends GeoServerSecuredPage {
         res.input = js;
 
         try {
-            res.response = (String)
-                cx.jsToJava(cx.evaluateString(scope, js, "<input>", 0, null), String.class);
-        } catch(WrappedException e) {
+            res.response = (String) Context.jsToJava(cx.evaluateString(scope, js, "<input>", 1, null), String.class);
+        } catch(EvaluatorException e) {
             res.success = false;
             res.response = e.getMessage();
         }
