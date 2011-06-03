@@ -1,21 +1,38 @@
-var catalog = Packages.org.geoserver.platform.GeoServerExtensions.bean("catalog");
+var _catalog = Packages.org.geoserver.platform.GeoServerExtensions.bean("catalog");
+var _factory = _catalog.getFactory();
 
 var Namespace = require("./namespace").Namespace;
 
 Object.defineProperty(exports, "namespaces", {
     get: function() {
-        var _namespaces = catalog.getNamespaces();
+        var _namespaces = _catalog.getNamespaces();
         var len = _namespaces.size();
         var namespaces = new Array(len);
-        var _info;
+        var _namespace;
         for (var i=0; i<len; ++i) {
-            _info = _namespaces.get(i);
+            _namespace = _namespaces.get(i);
             namespaces[i] = new Namespace({
-                alias: String(_info.getPrefix()),
-                uri: String(_info.getURI())
+                alias: String(_namespace.getPrefix()),
+                uri: String(_namespace.getURI())
             });
         }
         return namespaces;
     }
 });
 
+exports.addNamespace = function(namespace, setDefault) {
+    if (!(namespace instanceof Namespace)) {
+        namespace = new Namespace(namespace);
+    }
+    var _namespace = _factory.createNamespace();
+    _namespace.setPrefix(namespace.alias);
+    _namespace.setURI(namespace.uri);
+    _catalog.add(_namespace);
+    var _workspace = _factory.createWorkspace();
+    _workspace.setName(namespace.alias);
+    _catalog.add(_workspace);
+    if (setDefault) {
+        _catalog.setDefaultWorkspace(_workspace);
+    }
+    return namespace;
+};
