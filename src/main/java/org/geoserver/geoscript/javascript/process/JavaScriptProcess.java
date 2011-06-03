@@ -32,7 +32,7 @@ import org.opengis.util.InternationalString;
 import org.opengis.util.ProgressListener;
 
 public class JavaScriptProcess implements Process{
-    private Global scope;
+    private Global global;
     private Require require;
     private Scriptable jsProcess;
     public String identifier;
@@ -47,11 +47,11 @@ public class JavaScriptProcess implements Process{
         identifier = name;
         Context cx = Context.enter();
         cx.setLanguageVersion(170);
-        scope = new Global();
-        scope.initStandardObjects(cx, true);
+        global = new Global();
+        global.initStandardObjects(cx, true);
         // allow logging from js modules
-        Object wrappedLogger = Context.javaToJS(LOGGER, scope);
-        ScriptableObject.putProperty(scope, "LOGGER", wrappedLogger);        
+        Object wrappedLogger = Context.javaToJS(LOGGER, global);
+        ScriptableObject.putProperty(global, "LOGGER", wrappedLogger);        
         String modulePath;
         try {
             modulePath = GeoScriptModules.getModulePath();
@@ -59,7 +59,7 @@ public class JavaScriptProcess implements Process{
             throw new RuntimeException("Trouble evaluating module path.", e);
         }
         processDir.toURI().toString();
-        require = scope.installRequire(
+        require = global.installRequire(
             cx, 
             (List<String>) Arrays.asList(modulePath, processDir.toURI().toString()), 
             false
@@ -80,7 +80,7 @@ public class JavaScriptProcess implements Process{
             ProgressListener monitor) {
 
         Context cx = Context.enter();
-        Scriptable exports = (Scriptable) require.call(cx, scope, require, new String[] {"geoserver/process"});
+        Scriptable exports = (Scriptable) require.call(cx, global, require, new String[] {"geoserver/process"});
         Object executeWrapperObj = (Scriptable) exports.get("execute", exports);
         Function executeWrapper;
         if (executeWrapperObj instanceof Function) {
@@ -91,9 +91,9 @@ public class JavaScriptProcess implements Process{
             );
         }
         Map<String,Object> results = null;
-        Object[] args = {jsProcess, mapToJsObject(input, scope)};
+        Object[] args = {jsProcess, mapToJsObject(input, global)};
         try {
-            Object result = executeWrapper.call(cx, scope, scope, args);
+            Object result = executeWrapper.call(cx, global, global, args);
             results = jsObjectToMap((Scriptable)result);
         } finally { 
             Context.exit();
