@@ -18,7 +18,6 @@ import org.apache.wicket.model.PropertyModel;
 import org.geoserver.geoscript.javascript.GeoScriptModules;
 import org.geoserver.web.GeoServerSecuredPage;
 import org.mozilla.javascript.Context;
-import org.mozilla.javascript.EvaluatorException;
 import org.mozilla.javascript.tools.shell.Global;
 
 public class RhinoConsolePage extends GeoServerSecuredPage {
@@ -87,7 +86,7 @@ public class RhinoConsolePage extends GeoServerSecuredPage {
 
         try {
             res.response = (String) Context.jsToJava(cx.evaluateString(global, js, "<input>", 1, null), String.class);
-        } catch(EvaluatorException e) {
+        } catch(Exception e) {
             res.success = false;
             res.response = e.getMessage();
         }
