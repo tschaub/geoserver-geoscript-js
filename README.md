@@ -2,21 +2,6 @@
 
 These instructions assume you'll be running GeoServer from source with the GeoScript JS sources locally.
 
-### Getting Rhino
-
-GeoScript JS requires Rhino 1.7R3.  Until this is available in the main Maven repository, you can build it yourself and put the jar in your local Maven repository.
-
-First, get the sources for the 1.7R3 release and build the `js.jar`.
-
-    git clone https://github.com/mozilla/rhino.git
-    cd rhino
-    git checkout Rhino1_7R3_RELEASE
-    ant jar
-
-Next, push the resulting `js.jar` into your local Maven repository.
-
-    mvn install:install-file -Dfile=build/rhino1_7R3/js.jar -Dpackaging=jar -DgroupId=org.opengeo.rhino -DartifactId=rhino -Dversion=1.7R3
-
 ### Getting GeoServer
 
 Create a place for the GeoServer sources and check out the trunk from Subversion.
