@@ -1,6 +1,6 @@
 Index: src/community/pom.xml
 ===================================================================
---- src/community/pom.xml	(revision 15938)
+--- src/community/pom.xml	(revision 16007)
 +++ src/community/pom.xml	(working copy)
 @@ -46,6 +46,12 @@
    <!-- profiles for individual modules -->
@@ -17,9 +17,9 @@ Index: src/community/pom.xml
          <module>proxy</module>
 Index: src/web/app/pom.xml
 ===================================================================
---- src/web/app/pom.xml	(revision 15938)
+--- src/web/app/pom.xml	(revision 16007)
 +++ src/web/app/pom.xml	(working copy)
-@@ -413,6 +413,16 @@
+@@ -417,6 +417,16 @@
        </dependencies>
      </profile>
      <profile>
