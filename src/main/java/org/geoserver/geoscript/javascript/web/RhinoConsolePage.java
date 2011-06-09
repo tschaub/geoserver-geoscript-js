@@ -15,7 +15,7 @@ import org.apache.wicket.markup.html.list.ListItem;
 import org.apache.wicket.markup.html.list.ListView;
 import org.apache.wicket.model.Model;
 import org.apache.wicket.model.PropertyModel;
-import org.geoserver.geoscript.javascript.GeoScriptModules;
+import org.geoserver.geoscript.javascript.JavaScriptModules;
 import org.geoserver.web.GeoServerSecuredPage;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.tools.shell.Global;
@@ -39,7 +39,7 @@ public class RhinoConsolePage extends GeoServerSecuredPage {
         global.initStandardObjects(cx, true);
         String modulePath;
         try {
-            modulePath = GeoScriptModules.getModulePath();
+            modulePath = JavaScriptModules.getModulePath();
         } catch (URISyntaxException e) {
             throw new RuntimeException("Trouble evaluating module path.", e);
         }

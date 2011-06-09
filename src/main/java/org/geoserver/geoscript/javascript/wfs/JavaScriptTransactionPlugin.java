@@ -6,7 +6,7 @@ import java.util.logging.Logger;
 
 import net.opengis.wfs.TransactionType;
 
-import org.geoserver.geoscript.javascript.GeoScriptModules;
+import org.geoserver.geoscript.javascript.JavaScriptModules;
 import org.geoserver.wfs.TransactionEvent;
 import org.geoserver.wfs.TransactionEventType;
 import org.geoserver.wfs.TransactionPlugin;
@@ -25,8 +25,8 @@ public class JavaScriptTransactionPlugin implements TransactionPlugin {
     static Logger LOGGER = Logging.getLogger("org.geoserver.geoscript.javascript");
     
     public JavaScriptTransactionPlugin() {
-//        Global global = GeoScriptModules.getGlobal();
-//        Require require = GeoScriptModules.require;
+//        Global global = JavaScriptModules.getGlobal();
+//        Require require = JavaScriptModules.require;
 //
 //        Context cx = Context.enter();
 //        try {

@@ -9,14 +9,14 @@ import junit.framework.TestCase;
 /**
  *
  */
-public class GeoScriptModulesTest extends TestCase {
+public class JavaScriptModulesTest extends TestCase {
 
     /**
-     * Test method for {@link org.geoserver.geoscript.javascript.GeoScriptModules#getModulePath()}.
+     * Test method for {@link org.geoserver.geoscript.javascript.JavaScriptModules#getModulePath()}.
      * @throws URISyntaxException 
      */
     public void testGetModulePath() throws URISyntaxException {
-        String path = GeoScriptModules.getModulePath();
+        String path = JavaScriptModules.getModulePath();
         URI uri = new URI(path);
         assertTrue("absolute URI", uri.isAbsolute());
         File file = new File(uri.getPath());

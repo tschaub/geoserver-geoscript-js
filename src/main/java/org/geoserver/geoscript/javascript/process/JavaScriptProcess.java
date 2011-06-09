@@ -10,7 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import org.geoserver.geoscript.javascript.GeoScriptModules;
+import org.geoserver.geoscript.javascript.JavaScriptModules;
 import org.geotools.data.Parameter;
 import org.geotools.process.Process;
 import org.geotools.text.Text;
@@ -38,7 +38,7 @@ public class JavaScriptProcess implements Process{
         identifier = name;
         Scriptable exports;
         try {
-            exports = GeoScriptModules.require("processes/" + name);
+            exports = JavaScriptModules.require("processes/" + name);
         } catch (Exception e) {
             String msg = "Failed to locate process: " + name;
             LOGGER.warning(msg); // exceptions from constructor swallowed in GetCapabilities
@@ -59,7 +59,7 @@ public class JavaScriptProcess implements Process{
         
         Map<String,Object> results = null;
         
-        Scriptable exports = GeoScriptModules.require("geoserver/process");
+        Scriptable exports = JavaScriptModules.require("geoserver/process");
         Object executeWrapperObj = exports.get("execute", exports);
         Function executeWrapper;
         if (executeWrapperObj instanceof Function) {
@@ -70,7 +70,7 @@ public class JavaScriptProcess implements Process{
         }
         
         Object[] args = {process, mapToJsObject(input)};
-        Object result = GeoScriptModules.callMethod(executeWrapper, args);
+        Object result = JavaScriptModules.callMethod(executeWrapper, args);
         results = jsObjectToMap((Scriptable)result);
 
         return results;
@@ -151,13 +151,13 @@ public class JavaScriptProcess implements Process{
 
     private static Scriptable mapToJsObject(Map<String,Object> map) {
         Context cx = Context.enter();
-        Scriptable obj = cx.newObject(GeoScriptModules.sharedGlobal);
+        Scriptable obj = cx.newObject(JavaScriptModules.sharedGlobal);
         try {
             for (Map.Entry<String,Object> entry : map.entrySet()) {
                 ScriptableObject.putProperty(
                     obj, 
                     entry.getKey(), 
-                    Context.javaToJS(entry.getValue(), GeoScriptModules.sharedGlobal)
+                    Context.javaToJS(entry.getValue(), JavaScriptModules.sharedGlobal)
                 );
             }
         } finally { 

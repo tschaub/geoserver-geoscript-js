@@ -25,14 +25,14 @@ import org.mozilla.javascript.tools.shell.Global;
  * location for GeoScript JS modules.  Module files will be located in a 
  * "modules" directory relative to this class file.
  */
-public class GeoScriptModules {
+public class JavaScriptModules {
     
     static private Require sharedRequire;
     static transient public Global sharedGlobal;
 
     public static void init() {
         if (sharedGlobal == null) {
-            synchronized (GeoScriptModules.class) {
+            synchronized (JavaScriptModules.class) {
                 if (sharedGlobal == null) {
                     //create global + require
                     Context cx = Context.enter();
@@ -118,7 +118,7 @@ public class GeoScriptModules {
      * Returns the full path to JavaScript modules bundled with this extension.
      */
     static public String getModulePath() throws URISyntaxException {
-        return GeoScriptModules.class.getResource("modules").toURI().toString();
+        return JavaScriptModules.class.getResource("modules").toURI().toString();
     }
 
 }
