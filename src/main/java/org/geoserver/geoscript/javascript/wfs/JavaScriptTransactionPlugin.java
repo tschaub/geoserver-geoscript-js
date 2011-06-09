@@ -35,7 +35,6 @@ public class JavaScriptTransactionPlugin implements TransactionPlugin {
 //        } finally { 
 //            Context.exit();
 //        }
-        
     }
 
     public void dataStoreChange(TransactionEvent event) throws WFSException {

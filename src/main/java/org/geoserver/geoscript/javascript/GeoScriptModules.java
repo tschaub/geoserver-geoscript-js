@@ -15,6 +15,8 @@ import java.util.List;
 import org.geoserver.platform.GeoServerExtensions;
 import org.geoserver.platform.GeoServerResourceLoader;
 import org.mozilla.javascript.Context;
+import org.mozilla.javascript.Function;
+import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.commonjs.module.Require;
 import org.mozilla.javascript.tools.shell.Global;
 
@@ -25,19 +27,19 @@ import org.mozilla.javascript.tools.shell.Global;
  */
 public class GeoScriptModules {
     
-    static public Require require;
-    static transient public Global global;
+    static private Require sharedRequire;
+    static transient public Global sharedGlobal;
 
-    public static Global getGlobal() {
-        if (global == null) {
+    public static void init() {
+        if (sharedGlobal == null) {
             synchronized (GeoScriptModules.class) {
-                if (global == null) {
+                if (sharedGlobal == null) {
                     //create global + require
                     Context cx = Context.enter();
                     try {
                         cx.setLanguageVersion(170);
-                        global = new Global();
-                        global.initStandardObjects(cx, true);
+                        sharedGlobal = new Global();
+                        sharedGlobal.initStandardObjects(cx, true);
                         // allow logging from js modules
                         // Logger LOGGER = Logging.getLogger("org.geoserver.geoscript.javascript");
                         // Object wrappedLogger = Context.javaToJS(LOGGER, global);
@@ -62,7 +64,7 @@ public class GeoScriptModules {
                             throw new RuntimeException("Trouble creating scripts directory.", e);
                         }
                         String userModulePath = userModuleDir.toURI().toString();
-                        require = global.installRequire(
+                        sharedRequire = sharedGlobal.installRequire(
                                 cx, 
                                 (List<String>) Arrays.asList(gsModulePath, 
                                         userModulePath),
@@ -73,9 +75,45 @@ public class GeoScriptModules {
                 }
             }
         }
-        
-        return global;
     }
+    
+    static public Scriptable require(String locator) {
+        init();
+        Scriptable exports = null;
+        Context cx = enterContext();
+        try {
+            Object exportsObj = sharedRequire.call(
+                    cx, sharedGlobal, sharedGlobal, new String[] {locator});
+            if (exportsObj instanceof Scriptable) {
+                exports = (Scriptable) exportsObj;
+            } else {
+                throw new RuntimeException(
+                        "Failed to locate module: " + locator);
+            }
+        } finally { 
+            Context.exit();
+        }
+        
+        return exports;
+    }
+    
+    static public Object callMethod(Function function, Object[] args) {
+        Context cx = enterContext();
+        Object result = null;
+        try {
+            result = function.call(cx, sharedGlobal, sharedGlobal, args);
+        } finally {
+            Context.exit();
+        }
+        return result;
+    }
+    
+    static private Context enterContext() {
+        Context cx = Context.enter();
+        cx.setLanguageVersion(170);
+        return cx;
+    }
+    
     /**
      * Returns the full path to JavaScript modules bundled with this extension.
      */

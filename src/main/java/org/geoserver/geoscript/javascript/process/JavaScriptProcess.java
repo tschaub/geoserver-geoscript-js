@@ -20,15 +20,13 @@ import org.mozilla.javascript.Function;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.Wrapper;
-import org.mozilla.javascript.commonjs.module.Require;
-import org.mozilla.javascript.tools.shell.Global;
 import org.opengis.feature.type.AttributeDescriptor;
 import org.opengis.util.InternationalString;
 import org.opengis.util.ProgressListener;
 
 public class JavaScriptProcess implements Process{
-    private Scriptable jsProcess;
     public String identifier;
+    private Scriptable process;
     static Logger LOGGER = Logging.getLogger("org.geoserver.geoscript.javascript");
 
     /**
@@ -38,24 +36,20 @@ public class JavaScriptProcess implements Process{
      */
     public JavaScriptProcess(File processDir, String name) {
         identifier = name;
-        Context cx = Context.enter();
-        Object jsObject;
+        Scriptable exports;
         try {
-            cx.setLanguageVersion(170);
-            Global global = GeoScriptModules.getGlobal();
-            Scriptable exports = (Scriptable) GeoScriptModules.require.call(
-                    cx, global, global, new String[] {"processes/" + name});
-            jsObject = exports.get("process", exports);
+            exports = GeoScriptModules.require("processes/" + name);
         } catch (Exception e) {
-            throw new RuntimeException("Trouble with require('" + name + "')", e);
-        } finally {
-            Context.exit();
+            String msg = "Failed to locate process: " + name;
+            LOGGER.warning(msg); // exceptions from constructor swallowed in GetCapabilities
+            throw new RuntimeException(msg, e);
         }
-        if (jsObject instanceof Scriptable) {
-            jsProcess = (Scriptable) jsObject;
+        Object processObj = exports.get("process", exports);
+        if (processObj instanceof Scriptable) {
+            process = (Scriptable) processObj;
         } else {
-            String msg = "Script for process '" + name + "' doesn't export a process.";
-            LOGGER.warning(msg); // exceptions from constructor swallowed elsewhere
+            String msg = "Failed to find 'process' in exports of " + name;
+            LOGGER.warning(msg); // exceptions from constructor swallowed in GetCapabilities
             throw new RuntimeException(msg);
         }
     }
@@ -63,34 +57,27 @@ public class JavaScriptProcess implements Process{
     public Map<String, Object> execute(Map<String, Object> input,
             ProgressListener monitor) {
         
-        Global global = GeoScriptModules.getGlobal();
-        Require require = GeoScriptModules.require;
-
         Map<String,Object> results = null;
-        Context cx = Context.enter();
-        try {
-            Scriptable exports = (Scriptable) require.call(
-                    cx, global, global, new String[] {"geoserver/process"});
-            Object executeWrapperObj = (Scriptable) exports.get("execute", exports);
-            Function executeWrapper;
-            if (executeWrapperObj instanceof Function) {
-                executeWrapper = (Function) executeWrapperObj;
-            } else {
-                throw new RuntimeException(
-                        "Can't find execute method in geoserver/process module.");
-            }
-            Object[] args = {jsProcess, mapToJsObject(input, global)};
-            Object result = executeWrapper.call(cx, global, global, args);
-            results = jsObjectToMap((Scriptable)result);
-        } finally { 
-            Context.exit();
+        
+        Scriptable exports = GeoScriptModules.require("geoserver/process");
+        Object executeWrapperObj = exports.get("execute", exports);
+        Function executeWrapper;
+        if (executeWrapperObj instanceof Function) {
+            executeWrapper = (Function) executeWrapperObj;
+        } else {
+            throw new RuntimeException(
+                    "Can't find execute method in geoserver/process module.");
         }
+        
+        Object[] args = {process, mapToJsObject(input)};
+        Object result = GeoScriptModules.callMethod(executeWrapper, args);
+        results = jsObjectToMap((Scriptable)result);
 
         return results;
     }
 
     public InternationalString getTitle() {
-        Object titleObj = jsProcess.get("title", jsProcess);
+        Object titleObj = process.get("title", process);
         String title;
         if (titleObj instanceof String) {
             title = (String) titleObj;
@@ -102,7 +89,7 @@ public class JavaScriptProcess implements Process{
     }
 
     public InternationalString getDescription() {
-        Object descriptionObj = jsProcess.get("description", jsProcess);
+        Object descriptionObj = process.get("description", process);
         InternationalString description = null;
         if (descriptionObj instanceof String) {
             description = Text.text((String) descriptionObj);
@@ -153,24 +140,24 @@ public class JavaScriptProcess implements Process{
     }
 
     Map<String, Parameter<?>> getParameterInfo() {
-        Scriptable inputs = (Scriptable) jsProcess.get("inputs", jsProcess);
+        Scriptable inputs = (Scriptable) process.get("inputs", process);
         return getParametersFromObject(inputs);
     }
 
     Map<String, Parameter<?>> getResultInfo() {
-        Scriptable outputs = (Scriptable) jsProcess.get("outputs", jsProcess);
+        Scriptable outputs = (Scriptable) process.get("outputs", process);
         return getParametersFromObject(outputs);
     }
 
-    private static Scriptable mapToJsObject(Map<String,Object> map, Scriptable scope) {
+    private static Scriptable mapToJsObject(Map<String,Object> map) {
         Context cx = Context.enter();
-        Scriptable obj = cx.newObject(scope);
+        Scriptable obj = cx.newObject(GeoScriptModules.sharedGlobal);
         try {
             for (Map.Entry<String,Object> entry : map.entrySet()) {
                 ScriptableObject.putProperty(
                     obj, 
                     entry.getKey(), 
-                    Context.javaToJS(entry.getValue(), scope)
+                    Context.javaToJS(entry.getValue(), GeoScriptModules.sharedGlobal)
                 );
             }
         } finally { 
