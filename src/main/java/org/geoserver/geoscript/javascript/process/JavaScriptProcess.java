@@ -6,13 +6,15 @@
 package org.geoserver.geoscript.javascript.process;
 
 import java.io.File;
-import java.net.URISyntaxException;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import org.geoserver.geoscript.javascript.GeoScriptModules;
+import org.geotools.data.Parameter;
+import org.geotools.process.Process;
+import org.geotools.text.Text;
+import org.geotools.util.logging.Logging;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.Scriptable;
@@ -20,20 +22,11 @@ import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.Wrapper;
 import org.mozilla.javascript.commonjs.module.Require;
 import org.mozilla.javascript.tools.shell.Global;
-
-import org.geoserver.geoscript.javascript.GeoScriptModules;
-import org.geotools.data.Parameter;
-import org.geotools.process.Process;
-import org.geotools.text.Text;
-import org.geotools.util.logging.Logging;
-
 import org.opengis.feature.type.AttributeDescriptor;
 import org.opengis.util.InternationalString;
 import org.opengis.util.ProgressListener;
 
 public class JavaScriptProcess implements Process{
-    private Global global;
-    private Require require;
     private Scriptable jsProcess;
     public String identifier;
     static Logger LOGGER = Logging.getLogger("org.geoserver.geoscript.javascript");
@@ -46,53 +39,47 @@ public class JavaScriptProcess implements Process{
     public JavaScriptProcess(File processDir, String name) {
         identifier = name;
         Context cx = Context.enter();
-        cx.setLanguageVersion(170);
-        global = new Global();
-        global.initStandardObjects(cx, true);
-        // allow logging from js modules
-        Object wrappedLogger = Context.javaToJS(LOGGER, global);
-        ScriptableObject.putProperty(global, "LOGGER", wrappedLogger);        
-        String modulePath;
+        Object jsObject;
         try {
-            modulePath = GeoScriptModules.getModulePath();
-        } catch (URISyntaxException e) {
-            throw new RuntimeException("Trouble evaluating module path.", e);
+            cx.setLanguageVersion(170);
+            Global global = GeoScriptModules.getGlobal();
+            Scriptable exports = (Scriptable) GeoScriptModules.require.call(
+                    cx, global, global, new String[] {"processes/" + name});
+            jsObject = exports.get("process", exports);
+        } catch (Exception e) {
+            throw new RuntimeException("Trouble with require('" + name + "')", e);
+        } finally {
+            Context.exit();
         }
-        processDir.toURI().toString();
-        require = global.installRequire(
-            cx, 
-            (List<String>) Arrays.asList(modulePath, processDir.toURI().toString()), 
-            false
-        );
-        Scriptable exports = require.requireMain(cx, name);
-        Object jsObject = exports.get("process", exports);
-        Context.exit();
         if (jsObject instanceof Scriptable) {
             jsProcess = (Scriptable) jsObject;
         } else {
-            throw new RuntimeException(
-                "Script for process '" + name + "' doesn't export a process."
-            );
+            String msg = "Script for process '" + name + "' doesn't export a process.";
+            LOGGER.warning(msg); // exceptions from constructor swallowed elsewhere
+            throw new RuntimeException(msg);
         }
     }
 
     public Map<String, Object> execute(Map<String, Object> input,
             ProgressListener monitor) {
+        
+        Global global = GeoScriptModules.getGlobal();
+        Require require = GeoScriptModules.require;
 
-        Context cx = Context.enter();
-        Scriptable exports = (Scriptable) require.call(cx, global, require, new String[] {"geoserver/process"});
-        Object executeWrapperObj = (Scriptable) exports.get("execute", exports);
-        Function executeWrapper;
-        if (executeWrapperObj instanceof Function) {
-            executeWrapper = (Function) executeWrapperObj;
-        } else {
-            throw new RuntimeException(
-                "Can't find execute method in geoserver/process module."
-            );
-        }
         Map<String,Object> results = null;
-        Object[] args = {jsProcess, mapToJsObject(input, global)};
+        Context cx = Context.enter();
         try {
+            Scriptable exports = (Scriptable) require.call(
+                    cx, global, global, new String[] {"geoserver/process"});
+            Object executeWrapperObj = (Scriptable) exports.get("execute", exports);
+            Function executeWrapper;
+            if (executeWrapperObj instanceof Function) {
+                executeWrapper = (Function) executeWrapperObj;
+            } else {
+                throw new RuntimeException(
+                        "Can't find execute method in geoserver/process module.");
+            }
+            Object[] args = {jsProcess, mapToJsObject(input, global)};
             Object result = executeWrapper.call(cx, global, global, args);
             results = jsObjectToMap((Scriptable)result);
         } finally { 
