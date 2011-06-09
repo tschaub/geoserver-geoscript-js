@@ -8,4 +8,5 @@
         <property name="descriptionKey" value="RhinoConsolePage.shortDescription"/>
         <property name="componentClass" value="org.geoserver.geoscript.javascript.web.RhinoConsolePage"/>
     </bean>
+    <bean id="JSTransactionPlugin" class="org.geoserver.geoscript.javascript.wfs.JavaScriptTransactionPlugin"/>
 </beans>
