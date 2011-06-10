@@ -70,7 +70,7 @@ public class JavaScriptProcess implements Process{
         }
         
         Object[] args = {process, mapToJsObject(input)};
-        Object result = JavaScriptModules.callMethod(executeWrapper, args);
+        Object result = JavaScriptModules.callFunction(executeWrapper, args);
         results = jsObjectToMap((Scriptable)result);
 
         return results;

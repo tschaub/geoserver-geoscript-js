@@ -74,45 +74,54 @@ public class JavaScriptTransactionPlugin implements TransactionPlugin {
         map.put(event.getType(), event);
     }
 
+    private void handleResult(Object result) throws WFSException {
+        if (result instanceof Scriptable) {
+            Scriptable error = (Scriptable) result;
+            Object codeObj = error.get("code", error);
+            String code = null;
+            if (codeObj instanceof String) {
+                code = (String) codeObj;
+            }
+            Object messageObj = error.get("message", error);
+            String message = null;
+            if (messageObj instanceof String) {
+                message = (String) messageObj;
+            }
+            Object locatorObj = error.get("locator", error);
+            String locator = null;
+            if (locatorObj instanceof String) {
+                locator = (String) locatorObj;
+            }
+            throw new WFSException(message, code, locator);
+        }
+    }
+    
+    private void callFunction(Function function, Object[] args)  throws WFSException{
+        Object result = null;
+        try {
+            result = JavaScriptModules.callFunction(function, args);
+        } 
+        catch(Exception e) {
+            throw new WFSException(e.getMessage(), e);
+        }
+        handleResult(result);
+    }
+
     public TransactionType beforeTransaction(TransactionType request) throws WFSException {
         Function function = getFunction("beforeTransaction");
         if (function != null) {
             Object[] args = { request };
-            JavaScriptModules.callMethod(function, args);
+            callFunction(function, args);
         }
-        return null;
+        return request;
     }
+    
 
     public void beforeCommit(TransactionType request) throws WFSException {
         Function function = getFunction("beforeCommit");
         if (function != null) {
             Object[] args = { request };
-            Object result = null;
-            try {
-                result = JavaScriptModules.callMethod(function, args);
-                if (result instanceof Scriptable) {
-                    Scriptable error = (Scriptable) result;
-                    Object codeObj = error.get("code", error);
-                    String code = null;
-                    if (codeObj instanceof String) {
-                        code = (String) codeObj;
-                    }
-                    Object messageObj = error.get("message", error);
-                    String message = null;
-                    if (messageObj instanceof String) {
-                        message = (String) messageObj;
-                    }
-                    Object locatorObj = error.get("locator", error);
-                    String locator = null;
-                    if (locatorObj instanceof String) {
-                        locator = (String) locatorObj;
-                    }
-                    throw new WFSException(message, code, locator);
-                }
-            } 
-            catch(Exception e) {
-                throw new WFSException(e.getMessage(), e);
-            }
+            callFunction(function, args);
         }
     }
 
@@ -143,7 +152,7 @@ public class JavaScriptTransactionPlugin implements TransactionPlugin {
                 }
             }
             Object[] args = { request };
-            JavaScriptModules.callMethod(function, args);
+            callFunction(function, args);
         }
     }
 

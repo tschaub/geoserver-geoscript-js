@@ -46,8 +46,8 @@ public class JavaScriptModules {
                         sharedGlobal.initStandardObjects(cx, true);
                         
                         // allow logging from js modules
-                         Object wrappedLogger = Context.javaToJS(LOGGER, sharedGlobal);
-                         ScriptableObject.putProperty(sharedGlobal, "LOGGER", wrappedLogger);
+                        Object wrappedLogger = Context.javaToJS(LOGGER, sharedGlobal);
+                        ScriptableObject.putProperty(sharedGlobal, "LOGGER", wrappedLogger);
                         
                         // Require paths
                         // GeoScript
@@ -101,7 +101,7 @@ public class JavaScriptModules {
         return exports;
     }
     
-    static public Object callMethod(Function function, Object[] args) {
+    static public Object callFunction(Function function, Object[] args) {
         Context cx = enterContext();
         Object result = null;
         try {
