@@ -11,12 +11,15 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.logging.Logger;
 
 import org.geoserver.platform.GeoServerExtensions;
 import org.geoserver.platform.GeoServerResourceLoader;
+import org.geotools.util.logging.Logging;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.Scriptable;
+import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.commonjs.module.Require;
 import org.mozilla.javascript.tools.shell.Global;
 
@@ -29,8 +32,9 @@ public class JavaScriptModules {
     
     static private Require sharedRequire;
     static transient public Global sharedGlobal;
+    static private Logger LOGGER = Logging.getLogger("org.geoserver.geoscript.javascript");
 
-    public static void init() {
+    private static void init() {
         if (sharedGlobal == null) {
             synchronized (JavaScriptModules.class) {
                 if (sharedGlobal == null) {
@@ -40,10 +44,10 @@ public class JavaScriptModules {
                         cx.setLanguageVersion(170);
                         sharedGlobal = new Global();
                         sharedGlobal.initStandardObjects(cx, true);
+                        
                         // allow logging from js modules
-                        // Logger LOGGER = Logging.getLogger("org.geoserver.geoscript.javascript");
-                        // Object wrappedLogger = Context.javaToJS(LOGGER, global);
-                        // ScriptableObject.putProperty(global, "LOGGER", wrappedLogger);
+                         Object wrappedLogger = Context.javaToJS(LOGGER, sharedGlobal);
+                         ScriptableObject.putProperty(sharedGlobal, "LOGGER", wrappedLogger);
                         
                         // Require paths
                         // GeoScript
@@ -88,7 +92,7 @@ public class JavaScriptModules {
                 exports = (Scriptable) exportsObj;
             } else {
                 throw new RuntimeException(
-                        "Failed to locate module: " + locator);
+                        "Failed to locate exports in module: " + locator);
             }
         } finally { 
             Context.exit();
