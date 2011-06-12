@@ -2,7 +2,6 @@
 package org.geoserver.geoscript.javascript.wfs;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -19,10 +18,10 @@ import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.util.logging.Logging;
 import org.mozilla.javascript.Context;
-import org.mozilla.javascript.EcmaError;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.JavaScriptException;
 import org.mozilla.javascript.Scriptable;
+import org.mozilla.javascript.ScriptableObject;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.type.Name;
 
@@ -132,24 +131,36 @@ public class JavaScriptTransactionPlugin implements TransactionPlugin {
         Function function = getFunction("afterTransaction");
         if (function != null) {
             Map eventMap = affectedFeatures.get();
-            for (Iterator it = eventMap.entrySet().iterator(); it.hasNext();) {
-                Map.Entry entry = (Map.Entry) it.next();
-                TransactionEventType type = (TransactionEventType) entry.getKey();
-                Collection collection = (Collection) entry.getValue();
-                String name = type.name();
-                for (Iterator it2 = collection.iterator(); it2.hasNext();) {
-                    TransactionEvent event = (TransactionEvent) it2.next();
-                    SimpleFeatureCollection fc = event.getAffectedFeatures();
-                    SimpleFeatureIterator features = fc.features();
-                    Name schemaName = fc.getSchema().getName();
-                    String local = schemaName.getLocalPart();
-                    String uri = schemaName.getNamespaceURI();
-                    while(features.hasNext()) {
-                        SimpleFeature feature = features.next();
-                        String id = feature.getID();
+            Context cx = Context.enter();
+            try {
+                Scriptable obj = cx.newObject(JavaScriptModules.sharedGlobal);
+//                    ScriptableObject.putProperty(
+//                        obj, 
+//                        entry.getKey(), 
+//                        Context.javaToJS(entry.getValue(), JavaScriptModules.sharedGlobal)
+//                    );
+                for (Iterator<?> it = eventMap.entrySet().iterator(); it.hasNext();) {
+                    Map.Entry entry = (Map.Entry) it.next();
+                    TransactionEventType type = (TransactionEventType) entry.getKey();
+                    String eventName = type.name();
+                    Collection<?> collection = (Collection<?>) entry.getValue();
+                    Scriptable array = cx.newArray(JavaScriptModules.sharedGlobal, collection.size());
+                    for (Iterator<?> it2 = collection.iterator(); it2.hasNext();) {
+                        TransactionEvent event = (TransactionEvent) it2.next();
+                        SimpleFeatureCollection fc = event.getAffectedFeatures();
+                        Name schemaName = fc.getSchema().getName();
+                        String local = schemaName.getLocalPart();
+                        String uri = schemaName.getNamespaceURI();
+                        SimpleFeatureIterator features = fc.features();
+                        while (features.hasNext()) {
+                            SimpleFeature feature = features.next();
+                            String id = feature.getID();
+                        }
+                        features.close();
                     }
-                    features.close();
                 }
+            } finally { 
+                Context.exit();
             }
             Object[] args = { request };
             callFunction(function, args);

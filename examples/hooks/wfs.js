@@ -5,11 +5,11 @@ exports.beforeTransaction = function(request) {
 
 exports.beforeCommit = function(request) {
     LOGGER.info("beforeCommit");
-//    return {
-//        message: "obj message",
-//        code: "234",
-//        locator: "locator here"
-//    };
+    return {
+        message: "beforeCommit exception message",
+        code: "234",
+        locator: "locatorId"
+    };
 }
 
 exports.afterTransaction = function(request) {
