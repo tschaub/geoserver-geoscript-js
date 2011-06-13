@@ -1,7 +1,7 @@
 
 package org.geoserver.geoscript.javascript.wfs;
 
-import java.util.Collection;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -11,7 +11,6 @@ import net.opengis.wfs.TransactionType;
 import org.apache.commons.collections.MultiHashMap;
 import org.geoserver.geoscript.javascript.JavaScriptModules;
 import org.geoserver.wfs.TransactionEvent;
-import org.geoserver.wfs.TransactionEventType;
 import org.geoserver.wfs.TransactionPlugin;
 import org.geoserver.wfs.WFSException;
 import org.geotools.data.simple.SimpleFeatureCollection;
@@ -31,8 +30,7 @@ import org.opengis.feature.type.Name;
 public class JavaScriptTransactionPlugin implements TransactionPlugin {
     static Logger LOGGER = Logging.getLogger("org.geoserver.geoscript.javascript");
     
-    static ThreadLocal<Map<TransactionEventType,?>> affectedFeatures =
-        new ThreadLocal<Map<TransactionEventType,?>>();
+    static ThreadLocal<MultiHashMap> affectedFeatures = new ThreadLocal<MultiHashMap>();
     
     private Scriptable getExports() {
         Scriptable exports = null;
@@ -69,8 +67,8 @@ public class JavaScriptTransactionPlugin implements TransactionPlugin {
         if (affectedFeatures.get() == null) {
             affectedFeatures.set(new MultiHashMap());
         }
-        Map map = affectedFeatures.get();
-        map.put(event.getType(), event);
+        MultiHashMap map = affectedFeatures.get();
+        map.put(event.getType().name(), event.getAffectedFeatures());
     }
 
     private void handleResult(Object result) throws WFSException {
@@ -130,39 +128,41 @@ public class JavaScriptTransactionPlugin implements TransactionPlugin {
         }
         Function function = getFunction("afterTransaction");
         if (function != null) {
-            Map eventMap = affectedFeatures.get();
+            MultiHashMap eventMap = affectedFeatures.get();
             Context cx = Context.enter();
+            Scriptable details = null;
             try {
-                Scriptable obj = cx.newObject(JavaScriptModules.sharedGlobal);
-//                    ScriptableObject.putProperty(
-//                        obj, 
-//                        entry.getKey(), 
-//                        Context.javaToJS(entry.getValue(), JavaScriptModules.sharedGlobal)
-//                    );
+                details = cx.newObject(JavaScriptModules.sharedGlobal);
                 for (Iterator<?> it = eventMap.entrySet().iterator(); it.hasNext();) {
-                    Map.Entry entry = (Map.Entry) it.next();
-                    TransactionEventType type = (TransactionEventType) entry.getKey();
-                    String eventName = type.name();
-                    Collection<?> collection = (Collection<?>) entry.getValue();
-                    Scriptable array = cx.newArray(JavaScriptModules.sharedGlobal, collection.size());
-                    for (Iterator<?> it2 = collection.iterator(); it2.hasNext();) {
-                        TransactionEvent event = (TransactionEvent) it2.next();
-                        SimpleFeatureCollection fc = event.getAffectedFeatures();
+                    Map.Entry<String,ArrayList<SimpleFeatureCollection>> entry = 
+                        (Map.Entry<String,ArrayList<SimpleFeatureCollection>>) it.next();
+                    String eventName = entry.getKey();
+                    ArrayList<SimpleFeatureCollection> collection = entry.getValue();
+                    Scriptable array = cx.newArray(JavaScriptModules.sharedGlobal, collection.size()); // length will change
+                    int index = 0;
+                    for(Iterator<?> it2 = collection.iterator(); it2.hasNext();) {
+                        SimpleFeatureCollection fc = (SimpleFeatureCollection) it2.next();
                         Name schemaName = fc.getSchema().getName();
                         String local = schemaName.getLocalPart();
                         String uri = schemaName.getNamespaceURI();
                         SimpleFeatureIterator features = fc.features();
                         while (features.hasNext()) {
                             SimpleFeature feature = features.next();
-                            String id = feature.getID();
+                            Scriptable o = cx.newObject(JavaScriptModules.sharedGlobal);
+                            ScriptableObject.putProperty(o, "uri", uri);
+                            ScriptableObject.putProperty(o, "name", local);
+                            ScriptableObject.putProperty(o, "id", feature.getID());
+                            array.put(index, array, o);
+                            index += 1;
                         }
                         features.close();
                     }
+                    ScriptableObject.putProperty(details, eventName, array);
                 }
             } finally { 
                 Context.exit();
             }
-            Object[] args = { request };
+            Object[] args = { request, details };
             callFunction(function, args);
         }
     }
