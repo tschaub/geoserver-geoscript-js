@@ -104,6 +104,47 @@ public class JavaScriptTransactionPlugin implements TransactionPlugin {
         handleResult(result);
     }
 
+    private Scriptable getTransactionDetails() {
+        MultiHashMap eventMap = affectedFeatures.get();
+        Context cx = Context.enter();
+        Scriptable details = null;
+        try {
+            details = cx.newObject(JavaScriptModules.sharedGlobal);
+            for (Iterator<?> it = eventMap.entrySet().iterator(); it.hasNext();) {
+                Map.Entry<String,ArrayList<SimpleFeatureCollection>> entry = 
+                    (Map.Entry<String,ArrayList<SimpleFeatureCollection>>) it.next();
+                String eventName = entry.getKey();
+                ArrayList<SimpleFeatureCollection> collection = entry.getValue();
+                Scriptable array = cx.newArray(JavaScriptModules.sharedGlobal, collection.size()); // length will change
+                int index = 0;
+                for(Iterator<?> it2 = collection.iterator(); it2.hasNext();) {
+                    SimpleFeatureCollection fc = (SimpleFeatureCollection) it2.next();
+                    Name schemaName = fc.getSchema().getName();
+                    String local = schemaName.getLocalPart();
+                    String uri = schemaName.getNamespaceURI();
+                    SimpleFeatureIterator features = fc.features();
+                    try {
+                        while (features.hasNext()) {
+                            SimpleFeature feature = features.next();
+                            Scriptable o = cx.newObject(JavaScriptModules.sharedGlobal);
+                            ScriptableObject.putProperty(o, "uri", uri);
+                            ScriptableObject.putProperty(o, "name", local);
+                            ScriptableObject.putProperty(o, "id", feature.getID());
+                            array.put(index, array, o);
+                            index += 1;
+                        }
+                    } finally {
+                        features.close();
+                    }
+                }
+                ScriptableObject.putProperty(details, eventName, array);
+            }
+        } finally { 
+            Context.exit();
+        }
+        return details;
+    }
+
     public TransactionType beforeTransaction(TransactionType request) throws WFSException {
         Function function = getFunction("beforeTransaction");
         if (function != null) {
@@ -121,6 +162,7 @@ public class JavaScriptTransactionPlugin implements TransactionPlugin {
             callFunction(function, args);
         }
     }
+    
 
     public void afterTransaction(TransactionType request, boolean committed) {
         if (!committed) {
@@ -128,41 +170,7 @@ public class JavaScriptTransactionPlugin implements TransactionPlugin {
         }
         Function function = getFunction("afterTransaction");
         if (function != null) {
-            MultiHashMap eventMap = affectedFeatures.get();
-            Context cx = Context.enter();
-            Scriptable details = null;
-            try {
-                details = cx.newObject(JavaScriptModules.sharedGlobal);
-                for (Iterator<?> it = eventMap.entrySet().iterator(); it.hasNext();) {
-                    Map.Entry<String,ArrayList<SimpleFeatureCollection>> entry = 
-                        (Map.Entry<String,ArrayList<SimpleFeatureCollection>>) it.next();
-                    String eventName = entry.getKey();
-                    ArrayList<SimpleFeatureCollection> collection = entry.getValue();
-                    Scriptable array = cx.newArray(JavaScriptModules.sharedGlobal, collection.size()); // length will change
-                    int index = 0;
-                    for(Iterator<?> it2 = collection.iterator(); it2.hasNext();) {
-                        SimpleFeatureCollection fc = (SimpleFeatureCollection) it2.next();
-                        Name schemaName = fc.getSchema().getName();
-                        String local = schemaName.getLocalPart();
-                        String uri = schemaName.getNamespaceURI();
-                        SimpleFeatureIterator features = fc.features();
-                        while (features.hasNext()) {
-                            SimpleFeature feature = features.next();
-                            Scriptable o = cx.newObject(JavaScriptModules.sharedGlobal);
-                            ScriptableObject.putProperty(o, "uri", uri);
-                            ScriptableObject.putProperty(o, "name", local);
-                            ScriptableObject.putProperty(o, "id", feature.getID());
-                            array.put(index, array, o);
-                            index += 1;
-                        }
-                        features.close();
-                    }
-                    ScriptableObject.putProperty(details, eventName, array);
-                }
-            } finally { 
-                Context.exit();
-            }
-            Object[] args = { request, details };
+            Object[] args = { request, getTransactionDetails() };
             callFunction(function, args);
         }
     }
