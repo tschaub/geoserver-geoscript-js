@@ -165,13 +165,16 @@ public class JavaScriptTransactionPlugin implements TransactionPlugin {
     
 
     public void afterTransaction(TransactionType request, boolean committed) {
-        if (!committed) {
-            return;
-        }
-        Function function = getFunction("afterTransaction");
-        if (function != null) {
-            Object[] args = { request, getTransactionDetails() };
-            callFunction(function, args);
+        try {
+            if (committed) {
+                Function function = getFunction("afterTransaction");
+                if (function != null) {
+                    Object[] args = { request, getTransactionDetails() };
+                    callFunction(function, args);
+                }
+            }
+        } finally {
+            affectedFeatures.remove();
         }
     }
 
