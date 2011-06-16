@@ -7,14 +7,19 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 import net.opengis.wfs.TransactionType;
+import net.opengis.wfs.impl.DeleteElementTypeImpl;
+import net.opengis.wfs.impl.InsertElementTypeImpl;
+import net.opengis.wfs.impl.UpdateElementTypeImpl;
 
 import org.apache.commons.collections.MultiHashMap;
+import org.eclipse.emf.common.util.EList;
 import org.geoserver.geoscript.javascript.JavaScriptModules;
 import org.geoserver.wfs.TransactionEvent;
 import org.geoserver.wfs.TransactionPlugin;
 import org.geoserver.wfs.WFSException;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
+import org.geotools.feature.simple.SimpleFeatureImpl;
 import org.geotools.util.logging.Logging;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
@@ -31,6 +36,13 @@ public class JavaScriptTransactionPlugin implements TransactionPlugin {
     static Logger LOGGER = Logging.getLogger("org.geoserver.geoscript.javascript");
     
     static ThreadLocal<MultiHashMap> affectedFeatures = new ThreadLocal<MultiHashMap>();
+    
+    private Function featureConverter;
+    {
+        Scriptable exports = JavaScriptModules.require("geoscript/feature");
+        Scriptable FeatureWrapper = (Scriptable) exports.get("Feature", exports);
+        featureConverter = (Function) FeatureWrapper.get("from_", FeatureWrapper);
+    }
     
     private Scriptable getExports() {
         Scriptable exports = null;
@@ -110,15 +122,14 @@ public class JavaScriptTransactionPlugin implements TransactionPlugin {
         Scriptable details = null;
         try {
             details = cx.newObject(JavaScriptModules.sharedGlobal);
-            for (Iterator<?> it = eventMap.entrySet().iterator(); it.hasNext();) {
-                Map.Entry<String,ArrayList<SimpleFeatureCollection>> entry = 
-                    (Map.Entry<String,ArrayList<SimpleFeatureCollection>>) it.next();
+            for (Iterator<Map.Entry<String,ArrayList<SimpleFeatureCollection>>> it = eventMap.entrySet().iterator(); it.hasNext();) {
+                Map.Entry<String,ArrayList<SimpleFeatureCollection>> entry = it.next();
                 String eventName = entry.getKey();
                 ArrayList<SimpleFeatureCollection> collection = entry.getValue();
                 Scriptable array = cx.newArray(JavaScriptModules.sharedGlobal, collection.size()); // length will change
                 int index = 0;
-                for(Iterator<?> it2 = collection.iterator(); it2.hasNext();) {
-                    SimpleFeatureCollection fc = (SimpleFeatureCollection) it2.next();
+                for(Iterator<SimpleFeatureCollection> it2 = collection.iterator(); it2.hasNext();) {
+                    SimpleFeatureCollection fc = it2.next();
                     Name schemaName = fc.getSchema().getName();
                     String local = schemaName.getLocalPart();
                     String uri = schemaName.getNamespaceURI();
@@ -145,20 +156,57 @@ public class JavaScriptTransactionPlugin implements TransactionPlugin {
         return details;
     }
 
+    
+    private Scriptable getRequestDetails(TransactionType request) {
+        EList<InsertElementTypeImpl> insertList = request.getInsert();
+        EList<UpdateElementTypeImpl> updateList = request.getUpdate();
+        EList<DeleteElementTypeImpl> deleteList = request.getDelete();
+        Context cx = Context.enter();
+        Scriptable details = null;
+        try {
+            details = cx.newObject(JavaScriptModules.sharedGlobal);
+            // deal with inserts
+            Scriptable inserts = cx.newArray(JavaScriptModules.sharedGlobal, insertList.size()); // length will change
+            int index = 0;
+            for (Iterator<InsertElementTypeImpl> it = insertList.iterator(); it.hasNext();) {
+                InsertElementTypeImpl insertEl = it.next();
+                EList<SimpleFeatureImpl> featureList = insertEl.getFeature();
+                for (Iterator<SimpleFeatureImpl> features = featureList.iterator(); features.hasNext();) {
+                    Scriptable obj = cx.newObject(JavaScriptModules.sharedGlobal);
+                    SimpleFeatureImpl feature = features.next();
+                    Name name = feature.getType().getName();
+                    Object[] args = { feature };
+                    Object featureObj = featureConverter.call(
+                            cx, JavaScriptModules.sharedGlobal, JavaScriptModules.sharedGlobal, args);
+                    ScriptableObject.putProperty(obj, "feature", featureObj);
+                    ScriptableObject.putProperty(obj, "uri", name.getURI());
+                    ScriptableObject.putProperty(obj, "name", name.getLocalPart());
+                    ScriptableObject.putProperty(inserts, index, obj);
+                    index = index + 1;
+                }
+            }
+            ScriptableObject.putProperty(details, "inserts", inserts);
+            // TODO: deal with updates
+            // TODO: deal with deletes
+        } finally {
+            Context.exit();
+        }
+        
+        return details;
+    }
     public TransactionType beforeTransaction(TransactionType request) throws WFSException {
         Function function = getFunction("beforeTransaction");
         if (function != null) {
-            Object[] args = { request };
+            Object[] args = { getRequestDetails(request), request };
             callFunction(function, args);
         }
         return request;
     }
-    
 
     public void beforeCommit(TransactionType request) throws WFSException {
         Function function = getFunction("beforeCommit");
         if (function != null) {
-            Object[] args = { request };
+            Object[] args = { getRequestDetails(request), request };
             callFunction(function, args);
         }
     }
@@ -169,7 +217,7 @@ public class JavaScriptTransactionPlugin implements TransactionPlugin {
             if (committed) {
                 Function function = getFunction("afterTransaction");
                 if (function != null) {
-                    Object[] args = { request, getTransactionDetails() };
+                    Object[] args = { getTransactionDetails(), request };
                     callFunction(function, args);
                 }
             }
