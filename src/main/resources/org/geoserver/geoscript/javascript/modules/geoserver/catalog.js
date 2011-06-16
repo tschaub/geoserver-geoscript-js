@@ -1,7 +1,10 @@
-var _catalog = Packages.org.geoserver.platform.GeoServerExtensions.bean("catalog");
+var Namespace = require("./namespace").Namespace;
+var Layer = require("geoscript/layer").Layer;
+
+var geoserver = Packages.org.geoserver;
+var _catalog = geoserver.platform.GeoServerExtensions.bean("catalog");
 var _factory = _catalog.getFactory();
 
-var Namespace = require("./namespace").Namespace;
 
 Object.defineProperty(exports, "namespaces", {
     get: function() {
@@ -36,3 +39,19 @@ exports.addNamespace = function(namespace, setDefault) {
     }
     return namespace;
 };
+
+exports.getFeatureType = function(uri, name) {
+    var featureType = null;
+    var _featureTypeInfo = _catalog.getResourceByName(
+        uri, name, geoserver.catalog.FeatureTypeInfo
+    );
+    if (_featureTypeInfo != null) {
+        var _source = _featureTypeInfo.getFeatureSource();
+        var _store = _source.getDataStore();
+        // TODO: create workspace from store
+        var workspace = {};
+        featureType = Layer.from_(_source, workspace);
+    }
+    return featureType;
+};
+
