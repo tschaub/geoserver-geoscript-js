@@ -10,7 +10,9 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 
 import org.geoserver.platform.GeoServerExtensions;
@@ -38,49 +40,61 @@ public class JavaScriptModules {
         if (sharedGlobal == null) {
             synchronized (JavaScriptModules.class) {
                 if (sharedGlobal == null) {
-                    //create global + require
-                    Context cx = Context.enter();
-                    try {
-                        cx.setLanguageVersion(170);
-                        sharedGlobal = new Global();
-                        sharedGlobal.initStandardObjects(cx, true);
-                        
-                        // allow logging from js modules
-                        Object wrappedLogger = Context.javaToJS(LOGGER, sharedGlobal);
-                        ScriptableObject.putProperty(sharedGlobal, "LOGGER", wrappedLogger);
-                        
-                        // Require paths
-                        // GeoScript
-                        String gsModulePath;
-                        try {
-                            gsModulePath = getModulePath();
-                        } catch (URISyntaxException e) {
-                            throw new RuntimeException("Trouble evaluating module path.", e);
-                        }
-                        // User scripts
-                        GeoServerResourceLoader resourceLoader = 
-                            GeoServerExtensions.bean(GeoServerResourceLoader.class);
-                        File userModuleDir;
-                        try {
-                            userModuleDir = resourceLoader.findOrCreateDirectory(
-                                    "scripts/");
-                        } catch (IOException e) {
-                            throw new RuntimeException("Trouble creating scripts directory.", e);
-                        }
-                        String userModulePath = userModuleDir.toURI().toString();
-                        sharedRequire = sharedGlobal.installRequire(
-                                cx, 
-                                (List<String>) Arrays.asList(gsModulePath, 
-                                        userModulePath),
-                                false);
-                    } finally {
-                        Context.exit();
-                    }
+                    Map<String, Scriptable> map = createGlobalRequire();
+                    sharedGlobal = (Global) map.get("global");
+                    sharedRequire = (Require) map.get("require");
                 }
             }
         }
     }
-    
+
+    static public Map<String, Scriptable> createGlobalRequire() {
+        //create global + require
+        Global global = null;
+        Scriptable require = null;
+        Context cx = Context.enter();
+        try {
+            cx.setLanguageVersion(170);
+            global = new Global();
+            global.initStandardObjects(cx, true);
+            
+            // allow logging from js modules
+            Object wrappedLogger = Context.javaToJS(LOGGER, global);
+            ScriptableObject.putProperty(global, "LOGGER", wrappedLogger);
+            
+            // Require paths
+            // GeoScript
+            String gsModulePath;
+            try {
+                gsModulePath = getModulePath();
+            } catch (URISyntaxException e) {
+                throw new RuntimeException("Trouble evaluating module path.", e);
+            }
+            // User scripts
+            GeoServerResourceLoader resourceLoader = 
+                GeoServerExtensions.bean(GeoServerResourceLoader.class);
+            File userModuleDir;
+            try {
+                userModuleDir = resourceLoader.findOrCreateDirectory(
+                        "scripts/");
+            } catch (IOException e) {
+                throw new RuntimeException("Trouble creating scripts directory.", e);
+            }
+            String userModulePath = userModuleDir.toURI().toString();
+            require = global.installRequire(
+                    cx, 
+                    (List<String>) Arrays.asList(gsModulePath, 
+                            userModulePath),
+                    false);
+        } finally {
+            Context.exit();
+        }
+        Map<String, Scriptable> map = new HashMap<String, Scriptable>();
+        map.put("global", global);
+        map.put("require", require);
+        return map;
+    }
+
     static public Scriptable require(String locator) {
         init();
         Scriptable exports = null;
