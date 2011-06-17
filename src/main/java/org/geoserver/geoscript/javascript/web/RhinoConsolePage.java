@@ -1,10 +1,7 @@
 package org.geoserver.geoscript.javascript.web;
 
-import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.ajax.markup.html.form.AjaxButton;
@@ -20,9 +17,8 @@ import org.geoserver.geoscript.javascript.JavaScriptModules;
 import org.geoserver.web.GeoServerSecuredPage;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
-import org.mozilla.javascript.commonjs.module.Require;
-import org.mozilla.javascript.tools.shell.Global;
 import org.mozilla.javascript.ScriptableObject;
+import org.mozilla.javascript.tools.shell.Global;
 
 public class RhinoConsolePage extends GeoServerSecuredPage {
     private class Result implements java.io.Serializable {
@@ -37,27 +33,15 @@ public class RhinoConsolePage extends GeoServerSecuredPage {
 
     public RhinoConsolePage() {
         
-        Map<String, Scriptable> map = JavaScriptModules.createGlobalRequire();
-        global = (Global) map.get("global");
-        Require require = (Require) map.get("require");
+        global = JavaScriptModules.createGlobal();
 
-        Context cx = enterContext();
-
-        try {
-            Scriptable exports = null;
-            String locator = "geoserver/catalog";
-            Object exportsObj = require.call(
-                    cx, global, global, new String[] {locator});
-            if (exportsObj instanceof Scriptable) {
-                exports = (Scriptable) exportsObj;
-            } else {
-                throw new RuntimeException(
-                        "Failed to locate exports in module: " + locator);
-            }
-            ScriptableObject.putProperty((Scriptable) global, "catalog", exports);
-        } finally { 
-            Context.exit();
+        String locator = "geoserver/catalog";
+        Object exports = JavaScriptModules.require(locator, global);
+        if (!(exports instanceof Scriptable)) {
+            throw new RuntimeException(
+                    "Failed to locate exports in module: " + locator);
         }
+        ScriptableObject.putProperty((Scriptable) global, "catalog", (Scriptable) exports);
 
         final WebMarkupContainer container = new WebMarkupContainer("results-wrapper");
         final ListView<?> resultsDisplay = 
@@ -89,7 +73,7 @@ public class RhinoConsolePage extends GeoServerSecuredPage {
         Result res = new Result();
         res.input = js;
 
-        Context cx = enterContext();
+        Context cx = JavaScriptModules.enterContext();
         try {
             res.response = (String) Context.jsToJava(cx.evaluateString(global, js, "<input>", 1, null), String.class);
         } catch(Exception e) {
@@ -100,11 +84,5 @@ public class RhinoConsolePage extends GeoServerSecuredPage {
         }
 
         return res;
-    }
-    
-    private Context enterContext() {
-        Context cx = Context.enter();
-        cx.setLanguageVersion(170);
-        return cx;
     }
 }
