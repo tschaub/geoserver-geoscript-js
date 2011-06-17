@@ -1,5 +1,6 @@
 var Namespace = require("./namespace").Namespace;
 var Layer = require("geoscript/layer").Layer;
+var Workspace = require("geoscript/workspace").Workspace;
 
 var geoserver = Packages.org.geoserver;
 var _catalog = geoserver.platform.GeoServerExtensions.bean("catalog");
@@ -48,8 +49,7 @@ exports.getFeatureType = function(uri, name) {
     if (_featureTypeInfo != null) {
         var _source = _featureTypeInfo.getFeatureSource();
         var _store = _source.getDataStore();
-        // TODO: create workspace from store
-        var workspace = {};
+        var workspace = Workspace.from_(_store);
         featureType = Layer.from_(_source, workspace);
     }
     return featureType;
