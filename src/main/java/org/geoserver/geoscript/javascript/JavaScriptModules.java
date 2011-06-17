@@ -8,11 +8,12 @@ package org.geoserver.geoscript.javascript;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Logger;
 
 import org.geoserver.platform.GeoServerExtensions;
@@ -23,85 +24,122 @@ import org.mozilla.javascript.Function;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.commonjs.module.Require;
+import org.mozilla.javascript.commonjs.module.RequireBuilder;
+import org.mozilla.javascript.commonjs.module.provider.SoftCachingModuleScriptProvider;
+import org.mozilla.javascript.commonjs.module.provider.UrlModuleSourceProvider;
 import org.mozilla.javascript.tools.shell.Global;
 
 /**
- * The sole purpose of this class is to provide a way to look up the resource
- * location for GeoScript JS modules.  Module files will be located in a 
- * "modules" directory relative to this class file.
+ * This class provides a way to require JavaScript modules bundled with the 
+ * extension or in a "scripts" directory in the GeoServer data directory.
+ * It uses a shared RequireBuilder to cache loaded modules.  New Require 
+ * instances are created with the same RequrieBuilder each time {@link #require}
+ * is called.  This allows modules that have been updated on disk to be pulled
+ * in (module sources are checked for changes every 60 seconds).
  */
 public class JavaScriptModules {
     
-    static private Require sharedRequire;
+    static private RequireBuilder requireBuilder;
     static transient public Global sharedGlobal;
     static private Logger LOGGER = Logging.getLogger("org.geoserver.geoscript.javascript");
 
+    /**
+     * Returns a list of paths to JavaScript modules.  This includes modules
+     * bundled with this extension in addition to modules in the "scripts"
+     * directory of the data dir.
+     */
+    public static List<String> getModulePaths() {
+        // GeoScript modules
+        URL gsModuleUrl = JavaScriptModules.class.getResource("modules");
+        String gsModulePath;
+        try {
+            gsModulePath = gsModuleUrl.toURI().toString();
+        } catch (URISyntaxException e) {
+            throw new RuntimeException("Trouble evaluating module path.", e);
+        }
+        // User modules
+        GeoServerResourceLoader resourceLoader = 
+            GeoServerExtensions.bean(GeoServerResourceLoader.class);
+        File userModuleDir;
+        try {
+            userModuleDir = resourceLoader.findOrCreateDirectory(
+                    "scripts/");
+        } catch (IOException e) {
+            throw new RuntimeException("Trouble creating scripts directory.", e);
+        }
+        String userModulePath = userModuleDir.toURI().toString();
+        return (List<String>) Arrays.asList(gsModulePath, userModulePath);
+    }
+
+    /**
+     *  Create shared global and require builder one time only.
+     */
     private static void init() {
         if (sharedGlobal == null) {
             synchronized (JavaScriptModules.class) {
                 if (sharedGlobal == null) {
-                    Map<String, Scriptable> map = createGlobalRequire();
-                    sharedGlobal = (Global) map.get("global");
-                    sharedRequire = (Require) map.get("require");
+                    requireBuilder = new RequireBuilder();
+                    requireBuilder.setSandboxed(false);
+                    List<String> modulePaths = getModulePaths();
+                    List<URI> uris = new ArrayList<URI>();
+                    if (modulePaths != null) {
+                        for (String path : modulePaths) {
+                            try {
+                                URI uri = new URI(path);
+                                if (!uri.isAbsolute()) {
+                                    // call resolve("") to canonify the path
+                                    uri = new File(path).toURI().resolve("");
+                                }
+                                if (!uri.toString().endsWith("/")) {
+                                    // make sure URI always terminates with slash to
+                                    // avoid loading from unintended locations
+                                    uri = new URI(uri + "/");
+                                }
+                                uris.add(uri);
+                            } catch (URISyntaxException usx) {
+                                throw new RuntimeException(usx);
+                            }
+                        }
+                    }
+                    requireBuilder.setModuleScriptProvider(
+                            new SoftCachingModuleScriptProvider(
+                                    new UrlModuleSourceProvider(uris, null)));
+                    sharedGlobal = createGlobal();
                 }
             }
         }
     }
 
-    static public Map<String, Scriptable> createGlobalRequire() {
-        //create global + require
+    static public Global createGlobal() {
         Global global = null;
-        Scriptable require = null;
-        Context cx = Context.enter();
+        Context cx = enterContext();
         try {
-            cx.setLanguageVersion(170);
             global = new Global();
             global.initStandardObjects(cx, true);
             
             // allow logging from js modules
             Object wrappedLogger = Context.javaToJS(LOGGER, global);
             ScriptableObject.putProperty(global, "LOGGER", wrappedLogger);
-            
-            // Require paths
-            // GeoScript
-            String gsModulePath;
-            try {
-                gsModulePath = getModulePath();
-            } catch (URISyntaxException e) {
-                throw new RuntimeException("Trouble evaluating module path.", e);
-            }
-            // User scripts
-            GeoServerResourceLoader resourceLoader = 
-                GeoServerExtensions.bean(GeoServerResourceLoader.class);
-            File userModuleDir;
-            try {
-                userModuleDir = resourceLoader.findOrCreateDirectory(
-                        "scripts/");
-            } catch (IOException e) {
-                throw new RuntimeException("Trouble creating scripts directory.", e);
-            }
-            String userModulePath = userModuleDir.toURI().toString();
-            require = global.installRequire(
-                    cx, 
-                    (List<String>) Arrays.asList(gsModulePath, 
-                            userModulePath),
-                    false);
         } finally {
             Context.exit();
         }
-        Map<String, Scriptable> map = new HashMap<String, Scriptable>();
-        map.put("global", global);
-        map.put("require", require);
-        return map;
+        return global;
+    }
+    
+    static public Scriptable require(String locator) {
+        init();
+        return require(locator, sharedGlobal);
     }
 
-    static public Scriptable require(String locator) {
+    static public Scriptable require(String locator, Global global) {
         init();
         Scriptable exports = null;
         Context cx = enterContext();
         try {
-            Object exportsObj = sharedRequire.call(
-                    cx, sharedGlobal, sharedGlobal, new String[] {locator});
+            Require require = requireBuilder.createRequire(cx, global);
+            require.install(global);
+            Object exportsObj = require.call(
+                    cx, global, global, new String[] {locator});
             if (exportsObj instanceof Scriptable) {
                 exports = (Scriptable) exportsObj;
             } else {
@@ -111,7 +149,6 @@ public class JavaScriptModules {
         } finally { 
             Context.exit();
         }
-        
         return exports;
     }
     
@@ -126,17 +163,15 @@ public class JavaScriptModules {
         return result;
     }
     
-    static private Context enterContext() {
+    /**
+     * Associate a context with the current thread.  This calls Context.enter()
+     * and test the language version to 170.
+     * @return a Context associated with the thread
+     */
+    static public Context enterContext() {
         Context cx = Context.enter();
         cx.setLanguageVersion(170);
         return cx;
     }
     
-    /**
-     * Returns the full path to JavaScript modules bundled with this extension.
-     */
-    static public String getModulePath() throws URISyntaxException {
-        return JavaScriptModules.class.getResource("modules").toURI().toString();
-    }
-
 }
