@@ -6,7 +6,6 @@ var geoserver = Packages.org.geoserver;
 var _catalog = geoserver.platform.GeoServerExtensions.bean("catalog");
 var _factory = _catalog.getFactory();
 
-
 Object.defineProperty(exports, "namespaces", {
     get: function() {
         var _namespaces = _catalog.getNamespaces();
@@ -47,7 +46,7 @@ exports.getFeatureType = function(uri, name) {
         uri, name, geoserver.catalog.FeatureTypeInfo
     );
     if (_featureTypeInfo != null) {
-        var _source = _featureTypeInfo.getFeatureSource();
+        var _source = _featureTypeInfo.getFeatureSource(null, null);
         var _store = _source.getDataStore();
         var workspace = Workspace.from_(_store);
         featureType = Layer.from_(_source, workspace);
@@ -55,3 +54,6 @@ exports.getFeatureType = function(uri, name) {
     return featureType;
 };
 
+
+// TODO: remove this after debugging
+exports._catalog = _catalog;
