@@ -4,7 +4,6 @@ package org.geoserver.geoscript.javascript.wfs;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.logging.Logger;
 
 import net.opengis.wfs.TransactionType;
 import net.opengis.wfs.impl.DeleteElementTypeImpl;
@@ -20,7 +19,6 @@ import org.geoserver.wfs.WFSException;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.feature.simple.SimpleFeatureImpl;
-import org.geotools.util.logging.Logging;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.JavaScriptException;
@@ -33,21 +31,19 @@ import org.opengis.feature.type.Name;
  * A plugin that allows hooks during WFS transactions.
  */
 public class JavaScriptTransactionPlugin implements TransactionPlugin {
-    static Logger LOGGER = Logging.getLogger("org.geoserver.geoscript.javascript");
     
     static ThreadLocal<MultiHashMap> affectedFeatures = new ThreadLocal<MultiHashMap>();
     private JavaScriptModules jsModules;
-    
     private Function featureConverter;
-    {
-        Scriptable exports = JavaScriptModules.require("geoscript/feature");
+    
+    public JavaScriptTransactionPlugin(JavaScriptModules jsModules) {
+        this.jsModules = jsModules;
+        Scriptable exports = jsModules.require("geoscript/feature");
         Scriptable FeatureWrapper = (Scriptable) exports.get("Feature", exports);
         featureConverter = (Function) FeatureWrapper.get("from_", FeatureWrapper);
     }
     
-    public JavaScriptTransactionPlugin(JavaScriptModules jsModules) {
-        this.jsModules = jsModules;
-    }
+
     
     private Scriptable getExports() {
         Scriptable exports = null;
@@ -113,7 +109,7 @@ public class JavaScriptTransactionPlugin implements TransactionPlugin {
     private void callFunction(Function function, Object[] args)  throws WFSException{
         Object result = null;
         try {
-            result = JavaScriptModules.callFunction(function, args);
+            result = jsModules.callFunction(function, args);
         } 
         catch(Exception e) {
             throw new WFSException(e.getMessage(), e);
@@ -126,12 +122,12 @@ public class JavaScriptTransactionPlugin implements TransactionPlugin {
         Context cx = Context.enter();
         Scriptable details = null;
         try {
-            details = cx.newObject(JavaScriptModules.sharedGlobal);
+            details = cx.newObject(jsModules.sharedGlobal);
             for (Iterator<Map.Entry<String,ArrayList<SimpleFeatureCollection>>> it = eventMap.entrySet().iterator(); it.hasNext();) {
                 Map.Entry<String,ArrayList<SimpleFeatureCollection>> entry = it.next();
                 String eventName = entry.getKey();
                 ArrayList<SimpleFeatureCollection> collection = entry.getValue();
-                Scriptable array = cx.newArray(JavaScriptModules.sharedGlobal, collection.size()); // length will change
+                Scriptable array = cx.newArray(jsModules.sharedGlobal, collection.size()); // length will change
                 int index = 0;
                 for(Iterator<SimpleFeatureCollection> it2 = collection.iterator(); it2.hasNext();) {
                     SimpleFeatureCollection fc = it2.next();
@@ -142,7 +138,7 @@ public class JavaScriptTransactionPlugin implements TransactionPlugin {
                     try {
                         while (features.hasNext()) {
                             SimpleFeature feature = features.next();
-                            Scriptable o = cx.newObject(JavaScriptModules.sharedGlobal);
+                            Scriptable o = cx.newObject(jsModules.sharedGlobal);
                             ScriptableObject.putProperty(o, "uri", uri);
                             ScriptableObject.putProperty(o, "name", local);
                             ScriptableObject.putProperty(o, "id", feature.getID());
@@ -169,20 +165,20 @@ public class JavaScriptTransactionPlugin implements TransactionPlugin {
         Context cx = Context.enter();
         Scriptable details = null;
         try {
-            details = cx.newObject(JavaScriptModules.sharedGlobal);
+            details = cx.newObject(jsModules.sharedGlobal);
             // deal with inserts
-            Scriptable inserts = cx.newArray(JavaScriptModules.sharedGlobal, insertList.size()); // length will change
+            Scriptable inserts = cx.newArray(jsModules.sharedGlobal, insertList.size()); // length will change
             int index = 0;
             for (Iterator<InsertElementTypeImpl> it = insertList.iterator(); it.hasNext();) {
                 InsertElementTypeImpl insertEl = it.next();
                 EList<SimpleFeatureImpl> featureList = insertEl.getFeature();
                 for (Iterator<SimpleFeatureImpl> features = featureList.iterator(); features.hasNext();) {
-                    Scriptable obj = cx.newObject(JavaScriptModules.sharedGlobal);
+                    Scriptable obj = cx.newObject(jsModules.sharedGlobal);
                     SimpleFeatureImpl feature = features.next();
                     Name name = feature.getType().getName();
                     Object[] args = { feature };
                     Object featureObj = featureConverter.call(
-                            cx, JavaScriptModules.sharedGlobal, JavaScriptModules.sharedGlobal, args);
+                            cx, jsModules.sharedGlobal, jsModules.sharedGlobal, args);
                     ScriptableObject.putProperty(obj, "feature", featureObj);
                     ScriptableObject.putProperty(obj, "uri", name.getURI());
                     ScriptableObject.putProperty(obj, "name", name.getLocalPart());

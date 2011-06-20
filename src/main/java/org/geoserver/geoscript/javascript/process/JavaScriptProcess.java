@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 import org.geoserver.geoscript.javascript.JavaScriptModules;
+import org.geoserver.platform.GeoServerExtensions;
 import org.geotools.data.Parameter;
 import org.geotools.process.Process;
 import org.geotools.text.Text;
@@ -28,6 +29,7 @@ public class JavaScriptProcess implements Process{
     public String identifier;
     private Scriptable process;
     static Logger LOGGER = Logging.getLogger("org.geoserver.geoscript.javascript");
+    JavaScriptModules jsModules;
 
     /**
      * Constructs a new process that wraps a JavaScript module.
@@ -37,8 +39,10 @@ public class JavaScriptProcess implements Process{
     public JavaScriptProcess(File processDir, String name) {
         identifier = name;
         Scriptable exports;
+        jsModules = GeoServerExtensions.bean(JavaScriptModules.class);
+
         try {
-            exports = JavaScriptModules.require("processes/" + name);
+            exports = jsModules.require("processes/" + name);
         } catch (Exception e) {
             String msg = "Failed to locate process: " + name;
             LOGGER.warning(msg); // exceptions from constructor swallowed in GetCapabilities
@@ -59,7 +63,7 @@ public class JavaScriptProcess implements Process{
         
         Map<String,Object> results = null;
         
-        Scriptable exports = JavaScriptModules.require("geoserver/process");
+        Scriptable exports = jsModules.require("geoserver/process");
         Object executeWrapperObj = exports.get("execute", exports);
         Function executeWrapper;
         if (executeWrapperObj instanceof Function) {
@@ -70,7 +74,7 @@ public class JavaScriptProcess implements Process{
         }
         
         Object[] args = {process, mapToJsObject(input)};
-        Object result = JavaScriptModules.callFunction(executeWrapper, args);
+        Object result = jsModules.callFunction(executeWrapper, args);
         results = jsObjectToMap((Scriptable)result);
 
         return results;
@@ -149,15 +153,16 @@ public class JavaScriptProcess implements Process{
         return getParametersFromObject(outputs);
     }
 
-    private static Scriptable mapToJsObject(Map<String,Object> map) {
-        Context cx = Context.enter();
-        Scriptable obj = cx.newObject(JavaScriptModules.sharedGlobal);
+    private Scriptable mapToJsObject(Map<String,Object> map) {
+        Context cx = jsModules.enterContext();
+        Scriptable obj;
         try {
+            obj = cx.newObject(jsModules.sharedGlobal);
             for (Map.Entry<String,Object> entry : map.entrySet()) {
                 ScriptableObject.putProperty(
                     obj, 
                     entry.getKey(), 
-                    Context.javaToJS(entry.getValue(), JavaScriptModules.sharedGlobal)
+                    Context.javaToJS(entry.getValue(), jsModules.sharedGlobal)
                 );
             }
         } finally { 
@@ -166,7 +171,7 @@ public class JavaScriptProcess implements Process{
         return obj;
     }
 
-    private static Map<String, Object> jsObjectToMap(Scriptable obj) {
+    private Map<String, Object> jsObjectToMap(Scriptable obj) {
         Object[] ids = obj.getIds();
         Map<String, Object> map = new HashMap<String, Object>();
         for (Object idObj : ids) {

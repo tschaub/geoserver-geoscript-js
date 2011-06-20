@@ -16,7 +16,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
 
-import org.geoserver.platform.GeoServerExtensions;
 import org.geoserver.platform.GeoServerResourceLoader;
 import org.geotools.util.logging.Logging;
 import org.mozilla.javascript.Context;
@@ -39,11 +38,12 @@ import org.mozilla.javascript.tools.shell.Global;
  */
 public class JavaScriptModules {
     
-    static private RequireBuilder requireBuilder;
-    static transient public Global sharedGlobal;
-    static private Logger LOGGER = Logging.getLogger("org.geoserver.geoscript.javascript");
+    private RequireBuilder requireBuilder;
+    transient public Global sharedGlobal;
+    private Logger LOGGER = Logging.getLogger("org.geoserver.geoscript.javascript");
     
-    static GeoServerResourceLoader resourceLoader;
+    private GeoServerResourceLoader resourceLoader;
+
     public JavaScriptModules(GeoServerResourceLoader resourceLoader) {
         this.resourceLoader = resourceLoader;
     }
@@ -53,7 +53,7 @@ public class JavaScriptModules {
      * bundled with this extension in addition to modules in the "scripts"
      * directory of the data dir.
      */
-    public static List<String> getModulePaths() {
+    public List<String> getModulePaths() {
         // GeoScript modules
         URL gsModuleUrl = JavaScriptModules.class.getResource("modules");
         String gsModulePath;
@@ -77,9 +77,9 @@ public class JavaScriptModules {
     /**
      *  Create shared global and require builder one time only.
      */
-    private static void init() {
+    private void init() {
         if (sharedGlobal == null) {
-            synchronized (JavaScriptModules.class) {
+            synchronized (this) {
                 if (sharedGlobal == null) {
                     requireBuilder = new RequireBuilder();
                     requireBuilder.setSandboxed(false);
@@ -113,7 +113,7 @@ public class JavaScriptModules {
         }
     }
 
-    static public Global createGlobal() {
+    public Global createGlobal() {
         Global global = null;
         Context cx = enterContext();
         try {
@@ -129,12 +129,12 @@ public class JavaScriptModules {
         return global;
     }
     
-    static public Scriptable require(String locator) {
+    public Scriptable require(String locator) {
         init();
         return require(locator, sharedGlobal);
     }
 
-    static public Scriptable require(String locator, Global global) {
+    public Scriptable require(String locator, Global global) {
         init();
         Scriptable exports = null;
         Context cx = enterContext();
@@ -155,7 +155,7 @@ public class JavaScriptModules {
         return exports;
     }
     
-    static public Object callFunction(Function function, Object[] args) {
+    public Object callFunction(Function function, Object[] args) {
         Context cx = enterContext();
         Object result = null;
         try {
@@ -171,10 +171,10 @@ public class JavaScriptModules {
      * and test the language version to 170.
      * @return a Context associated with the thread
      */
-    static public Context enterContext() {
+    public Context enterContext() {
         Context cx = Context.enter();
         cx.setLanguageVersion(170);
         return cx;
     }
-    
+
 }

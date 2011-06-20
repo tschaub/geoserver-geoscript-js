@@ -14,6 +14,7 @@ import org.apache.wicket.markup.html.list.ListView;
 import org.apache.wicket.model.Model;
 import org.apache.wicket.model.PropertyModel;
 import org.geoserver.geoscript.javascript.JavaScriptModules;
+import org.geoserver.platform.GeoServerExtensions;
 import org.geoserver.web.GeoServerSecuredPage;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
@@ -30,13 +31,14 @@ public class RhinoConsolePage extends GeoServerSecuredPage {
     private List<Result> results = new ArrayList<Result>();
     private String prompt = "";
     private Global global;
+    private JavaScriptModules jsModules;
 
     public RhinoConsolePage() {
-        
-        global = JavaScriptModules.createGlobal();
+        this.jsModules = GeoServerExtensions.bean(JavaScriptModules.class);;
+        global = jsModules.createGlobal();
 
         String locator = "geoserver/catalog";
-        Object exports = JavaScriptModules.require(locator, global);
+        Object exports = jsModules.require(locator, global);
         if (!(exports instanceof Scriptable)) {
             throw new RuntimeException(
                     "Failed to locate exports in module: " + locator);
@@ -73,7 +75,7 @@ public class RhinoConsolePage extends GeoServerSecuredPage {
         Result res = new Result();
         res.input = js;
 
-        Context cx = JavaScriptModules.enterContext();
+        Context cx = jsModules.enterContext();
         try {
             res.response = (String) Context.jsToJava(cx.evaluateString(global, js, "<input>", 1, null), String.class);
         } catch(Exception e) {

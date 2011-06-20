@@ -14,7 +14,6 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.geoserver.geoscript.javascript.JavaScriptModules;
 import org.geoserver.platform.GeoServerExtensions;
 import org.geoserver.platform.GeoServerResourceLoader;
 import org.geotools.data.Parameter;
@@ -33,7 +32,7 @@ public class JavaScriptProcessFactory implements ProcessFactory {
     public static final String SCRIPT_SEARCH_PATH = "scripts/processes/";
     private GeoServerResourceLoader resourceLoader = 
         GeoServerExtensions.bean(GeoServerResourceLoader.class);
-    static Logger LOGGER = Logging.getLogger("org.geoserver.geoscript.javascript");
+    private Logger LOGGER = Logging.getLogger("org.geoserver.geoscript.javascript");
     
     private File scriptDirectory = null;
     {
@@ -44,7 +43,6 @@ public class JavaScriptProcessFactory implements ProcessFactory {
         }
     }
 
-    
     public Set<Name> getNames() {
         Set<Name> result = new HashSet<Name>();
         
@@ -69,7 +67,6 @@ public class JavaScriptProcessFactory implements ProcessFactory {
      * @param Name a qualified name identifying the script file
      */
     public JavaScriptProcess create(Name name) {
-        GeoServerExtensions.bean(JavaScriptModules.class);
         return new JavaScriptProcess(scriptDirectory, name.getLocalPart());
     }
 
