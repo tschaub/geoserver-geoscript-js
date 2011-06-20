@@ -157,12 +157,12 @@ public class JavaScriptProcess implements Process{
         Context cx = jsModules.enterContext();
         Scriptable obj;
         try {
-            obj = cx.newObject(jsModules.sharedGlobal);
+            obj = cx.newObject(jsModules.global);
             for (Map.Entry<String,Object> entry : map.entrySet()) {
                 ScriptableObject.putProperty(
                     obj, 
                     entry.getKey(), 
-                    Context.javaToJS(entry.getValue(), jsModules.sharedGlobal)
+                    Context.javaToJS(entry.getValue(), jsModules.global)
                 );
             }
         } finally { 

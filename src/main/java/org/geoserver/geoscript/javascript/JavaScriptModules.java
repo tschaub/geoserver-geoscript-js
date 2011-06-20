@@ -39,7 +39,7 @@ import org.mozilla.javascript.tools.shell.Global;
 public class JavaScriptModules {
     
     private RequireBuilder requireBuilder;
-    transient public Global sharedGlobal;
+    transient public Global global;
     private Logger LOGGER = Logging.getLogger("org.geoserver.geoscript.javascript");
     
     private GeoServerResourceLoader resourceLoader;
@@ -78,9 +78,9 @@ public class JavaScriptModules {
      *  Create shared global and require builder one time only.
      */
     private void init() {
-        if (sharedGlobal == null) {
+        if (global == null) {
             synchronized (this) {
-                if (sharedGlobal == null) {
+                if (global == null) {
                     requireBuilder = new RequireBuilder();
                     requireBuilder.setSandboxed(false);
                     List<String> modulePaths = getModulePaths();
@@ -107,7 +107,7 @@ public class JavaScriptModules {
                     requireBuilder.setModuleScriptProvider(
                             new SoftCachingModuleScriptProvider(
                                     new UrlModuleSourceProvider(uris, null)));
-                    sharedGlobal = createGlobal();
+                    global = createGlobal();
                 }
             }
         }
@@ -131,7 +131,7 @@ public class JavaScriptModules {
     
     public Scriptable require(String locator) {
         init();
-        return require(locator, sharedGlobal);
+        return require(locator, global);
     }
 
     public Scriptable require(String locator, Global global) {
@@ -159,7 +159,7 @@ public class JavaScriptModules {
         Context cx = enterContext();
         Object result = null;
         try {
-            result = function.call(cx, sharedGlobal, sharedGlobal, args);
+            result = function.call(cx, global, global, args);
         } finally {
             Context.exit();
         }

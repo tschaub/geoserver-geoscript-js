@@ -2,11 +2,11 @@
 <!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
 
 <beans>
-    <bean id="rhinoConsole" class="org.geoserver.web.DemoLinkInfo">
-        <property name="id" value="rhinoConsole"/>
-        <property name="titleKey" value="RhinoConsolePage.title"/>
-        <property name="descriptionKey" value="RhinoConsolePage.shortDescription"/>
-        <property name="componentClass" value="org.geoserver.geoscript.javascript.web.RhinoConsolePage"/>
+    <bean id="JavaScriptConsolePage" class="org.geoserver.web.DemoLinkInfo">
+        <property name="id" value="JavaScriptConsolePage"/>
+        <property name="titleKey" value="JavaScriptConsolePage.title"/>
+        <property name="descriptionKey" value="JavaScriptConsolePage.shortDescription"/>
+        <property name="componentClass" value="org.geoserver.geoscript.javascript.web.JavaScriptConsolePage"/>
     </bean>
     <bean id="JSTransactionPlugin" class="org.geoserver.geoscript.javascript.wfs.JavaScriptTransactionPlugin">
         <constructor-arg ref="JSModules"/>

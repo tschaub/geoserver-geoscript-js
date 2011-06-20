@@ -131,12 +131,12 @@ public class JavaScriptTransactionPlugin implements TransactionPlugin {
         Context cx = Context.enter();
         Scriptable details = null;
         try {
-            details = cx.newObject(jsModules.sharedGlobal);
+            details = cx.newObject(jsModules.global);
             for (Iterator<Map.Entry<String,ArrayList<SimpleFeatureCollection>>> it = eventMap.entrySet().iterator(); it.hasNext();) {
                 Map.Entry<String,ArrayList<SimpleFeatureCollection>> entry = it.next();
                 String eventName = entry.getKey();
                 ArrayList<SimpleFeatureCollection> collection = entry.getValue();
-                Scriptable array = cx.newArray(jsModules.sharedGlobal, collection.size()); // length will change
+                Scriptable array = cx.newArray(jsModules.global, collection.size()); // length will change
                 int index = 0;
                 for(Iterator<SimpleFeatureCollection> it2 = collection.iterator(); it2.hasNext();) {
                     SimpleFeatureCollection fc = it2.next();
@@ -147,7 +147,7 @@ public class JavaScriptTransactionPlugin implements TransactionPlugin {
                     try {
                         while (features.hasNext()) {
                             SimpleFeature feature = features.next();
-                            Scriptable o = cx.newObject(jsModules.sharedGlobal);
+                            Scriptable o = cx.newObject(jsModules.global);
                             ScriptableObject.putProperty(o, "uri", uri);
                             ScriptableObject.putProperty(o, "name", local);
                             ScriptableObject.putProperty(o, "id", feature.getID());
@@ -174,20 +174,20 @@ public class JavaScriptTransactionPlugin implements TransactionPlugin {
         Context cx = Context.enter();
         Scriptable details = null;
         try {
-            details = cx.newObject(jsModules.sharedGlobal);
+            details = cx.newObject(jsModules.global);
             // deal with inserts
-            Scriptable inserts = cx.newArray(jsModules.sharedGlobal, insertList.size()); // length will change
+            Scriptable inserts = cx.newArray(jsModules.global, insertList.size()); // length will change
             int index = 0;
             for (Iterator<InsertElementTypeImpl> it = insertList.iterator(); it.hasNext();) {
                 InsertElementTypeImpl insertEl = it.next();
                 EList<SimpleFeatureImpl> featureList = insertEl.getFeature();
                 for (Iterator<SimpleFeatureImpl> features = featureList.iterator(); features.hasNext();) {
-                    Scriptable obj = cx.newObject(jsModules.sharedGlobal);
+                    Scriptable obj = cx.newObject(jsModules.global);
                     SimpleFeatureImpl feature = features.next();
                     Name name = feature.getType().getName();
                     Object[] args = { feature };
                     Object featureObj = getFeatureConverter().call(
-                            cx, jsModules.sharedGlobal, jsModules.sharedGlobal, args);
+                            cx, jsModules.global, jsModules.global, args);
                     ScriptableObject.putProperty(obj, "feature", featureObj);
                     ScriptableObject.putProperty(obj, "uri", name.getURI());
                     ScriptableObject.putProperty(obj, "name", name.getLocalPart());

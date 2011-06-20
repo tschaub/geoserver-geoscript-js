@@ -5,15 +5,21 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 
+import org.geoserver.data.test.MockData;
 import org.geoserver.test.GeoServerTestSupport;
-
-import junit.framework.TestCase;
 
 /**
  *
  */
 public class JavaScriptModulesTest extends GeoServerTestSupport {
 
+//    @Override
+//    protected void populateDataDirectory(MockData dataDirectory) throws Exception {
+//        dataDirectory.copyTo(getClass().getResourceAsStream(arg0), "scripts");
+//        // TODO Auto-generated method stub
+//        super.populateDataDirectory(dataDirectory);
+//    }
+    
     /**
      * Test method for {@link org.geoserver.geoscript.javascript.JavaScriptModules#getModulePaths()}.
      * @throws URISyntaxException 

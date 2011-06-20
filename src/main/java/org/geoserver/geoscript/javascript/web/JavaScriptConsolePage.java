@@ -21,7 +21,7 @@ import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.tools.shell.Global;
 
-public class RhinoConsolePage extends GeoServerSecuredPage {
+public class JavaScriptConsolePage extends GeoServerSecuredPage {
     private class Result implements java.io.Serializable {
         private static final long serialVersionUID = 1L;
         public String input, response;
@@ -33,7 +33,7 @@ public class RhinoConsolePage extends GeoServerSecuredPage {
     private Global global;
     private JavaScriptModules jsModules;
 
-    public RhinoConsolePage() {
+    public JavaScriptConsolePage() {
         this.jsModules = GeoServerExtensions.bean(JavaScriptModules.class);;
         global = jsModules.createGlobal();
 
@@ -56,7 +56,7 @@ public class RhinoConsolePage extends GeoServerSecuredPage {
         container.setOutputMarkupId(true);
         add(container);
         container.add(resultsDisplay);
-        Form<RhinoConsolePage> f = new Form<RhinoConsolePage>("prompt-wrapper", new Model<RhinoConsolePage>(this));
+        Form<JavaScriptConsolePage> f = new Form<JavaScriptConsolePage>("prompt-wrapper", new Model<JavaScriptConsolePage>(this));
         f.setOutputMarkupId(true);
         add(f);
         f.add(new TextField<Object>("prompt", new PropertyModel<Object>(this, "prompt")));
