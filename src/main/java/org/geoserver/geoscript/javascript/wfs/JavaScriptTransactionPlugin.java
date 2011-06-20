@@ -38,12 +38,21 @@ public class JavaScriptTransactionPlugin implements TransactionPlugin {
     
     public JavaScriptTransactionPlugin(JavaScriptModules jsModules) {
         this.jsModules = jsModules;
-        Scriptable exports = jsModules.require("geoscript/feature");
-        Scriptable FeatureWrapper = (Scriptable) exports.get("Feature", exports);
-        featureConverter = (Function) FeatureWrapper.get("from_", FeatureWrapper);
     }
     
 
+    private Function getFeatureConverter() {
+        if (featureConverter == null) {
+            synchronized (this) {
+               if (featureConverter == null) {
+                   Scriptable exports = jsModules.require("geoscript/feature");
+                   Scriptable FeatureWrapper = (Scriptable) exports.get("Feature", exports);
+                   featureConverter = (Function) FeatureWrapper.get("from_", FeatureWrapper);
+               }
+            }
+        }
+        return featureConverter;
+    }
     
     private Scriptable getExports() {
         Scriptable exports = null;
@@ -177,7 +186,7 @@ public class JavaScriptTransactionPlugin implements TransactionPlugin {
                     SimpleFeatureImpl feature = features.next();
                     Name name = feature.getType().getName();
                     Object[] args = { feature };
-                    Object featureObj = featureConverter.call(
+                    Object featureObj = getFeatureConverter().call(
                             cx, jsModules.sharedGlobal, jsModules.sharedGlobal, args);
                     ScriptableObject.putProperty(obj, "feature", featureObj);
                     ScriptableObject.putProperty(obj, "uri", name.getURI());
