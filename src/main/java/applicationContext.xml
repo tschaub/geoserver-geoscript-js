@@ -8,5 +8,10 @@
         <property name="descriptionKey" value="RhinoConsolePage.shortDescription"/>
         <property name="componentClass" value="org.geoserver.geoscript.javascript.web.RhinoConsolePage"/>
     </bean>
-    <bean id="JSTransactionPlugin" class="org.geoserver.geoscript.javascript.wfs.JavaScriptTransactionPlugin"/>
+    <bean id="JSTransactionPlugin" class="org.geoserver.geoscript.javascript.wfs.JavaScriptTransactionPlugin">
+        <constructor-arg ref="JSModules"/>
+    </bean>
+    <bean id="JSModules" class="org.geoserver.geoscript.javascript.JavaScriptModules">
+        <constructor-arg ref="resourceLoader"/>
+    </bean>
 </beans>

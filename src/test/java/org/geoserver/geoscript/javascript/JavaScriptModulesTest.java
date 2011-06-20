@@ -5,19 +5,22 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 
+import org.geoserver.test.GeoServerTestSupport;
+
 import junit.framework.TestCase;
 
 /**
  *
  */
-public class JavaScriptModulesTest extends TestCase {
+public class JavaScriptModulesTest extends GeoServerTestSupport {
 
     /**
      * Test method for {@link org.geoserver.geoscript.javascript.JavaScriptModules#getModulePaths()}.
      * @throws URISyntaxException 
      */
     public void testGetModulePath() throws URISyntaxException {
-        List<String> paths = JavaScriptModules.getModulePaths();
+        JavaScriptModules jsModules = (JavaScriptModules) applicationContext.getBean("JSModules");
+        List<String> paths = jsModules.getModulePaths();
         assertTrue("got some paths", paths.size() > 0);
         for (String path : paths) {
             URI uri = new URI(path);

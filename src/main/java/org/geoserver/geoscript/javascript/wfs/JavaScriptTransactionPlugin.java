@@ -36,6 +36,7 @@ public class JavaScriptTransactionPlugin implements TransactionPlugin {
     static Logger LOGGER = Logging.getLogger("org.geoserver.geoscript.javascript");
     
     static ThreadLocal<MultiHashMap> affectedFeatures = new ThreadLocal<MultiHashMap>();
+    private JavaScriptModules jsModules;
     
     private Function featureConverter;
     {
@@ -44,10 +45,14 @@ public class JavaScriptTransactionPlugin implements TransactionPlugin {
         featureConverter = (Function) FeatureWrapper.get("from_", FeatureWrapper);
     }
     
+    public JavaScriptTransactionPlugin(JavaScriptModules jsModules) {
+        this.jsModules = jsModules;
+    }
+    
     private Scriptable getExports() {
         Scriptable exports = null;
         try {
-            exports = JavaScriptModules.require("hooks/wfs");
+            exports = jsModules.require("hooks/wfs");
         } catch (JavaScriptException e) {
             // no hooks/wfs - pass
         }

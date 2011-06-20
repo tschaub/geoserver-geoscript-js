@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.geoserver.geoscript.javascript.JavaScriptModules;
 import org.geoserver.platform.GeoServerExtensions;
 import org.geoserver.platform.GeoServerResourceLoader;
 import org.geotools.data.Parameter;
@@ -68,6 +69,7 @@ public class JavaScriptProcessFactory implements ProcessFactory {
      * @param Name a qualified name identifying the script file
      */
     public JavaScriptProcess create(Name name) {
+        GeoServerExtensions.bean(JavaScriptModules.class);
         return new JavaScriptProcess(scriptDirectory, name.getLocalPart());
     }
 

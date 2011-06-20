@@ -42,6 +42,11 @@ public class JavaScriptModules {
     static private RequireBuilder requireBuilder;
     static transient public Global sharedGlobal;
     static private Logger LOGGER = Logging.getLogger("org.geoserver.geoscript.javascript");
+    
+    static GeoServerResourceLoader resourceLoader;
+    public JavaScriptModules(GeoServerResourceLoader resourceLoader) {
+        this.resourceLoader = resourceLoader;
+    }
 
     /**
      * Returns a list of paths to JavaScript modules.  This includes modules
@@ -58,8 +63,6 @@ public class JavaScriptModules {
             throw new RuntimeException("Trouble evaluating module path.", e);
         }
         // User modules
-        GeoServerResourceLoader resourceLoader = 
-            GeoServerExtensions.bean(GeoServerResourceLoader.class);
         File userModuleDir;
         try {
             userModuleDir = resourceLoader.findOrCreateDirectory(
