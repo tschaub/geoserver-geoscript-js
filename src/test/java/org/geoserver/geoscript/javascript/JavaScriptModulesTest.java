@@ -3,8 +3,6 @@ package org.geoserver.geoscript.javascript;
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import org.geoserver.data.test.MockData;
