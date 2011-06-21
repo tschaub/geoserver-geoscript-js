@@ -55,7 +55,7 @@ public class JavaScriptModules {
      */
     public List<String> getModulePaths() {
         // GeoScript modules
-        URL gsModuleUrl = JavaScriptModules.class.getResource("modules");
+        URL gsModuleUrl = getClass().getResource("modules");
         String gsModulePath;
         try {
             gsModulePath = gsModuleUrl.toURI().toString();
