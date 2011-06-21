@@ -67,7 +67,7 @@ public class JavaScriptProcessFactory implements ProcessFactory {
      * @param Name a qualified name identifying the script file
      */
     public JavaScriptProcess create(Name name) {
-        return new JavaScriptProcess(scriptDirectory, name.getLocalPart());
+        return new JavaScriptProcess(name.getLocalPart());
     }
 
     public InternationalString getDescription(Name name) {

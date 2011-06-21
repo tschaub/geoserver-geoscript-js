@@ -5,7 +5,6 @@
  */
 package org.geoserver.geoscript.javascript.process;
 
-import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -33,10 +32,9 @@ public class JavaScriptProcess implements Process{
 
     /**
      * Constructs a new process that wraps a JavaScript module.
-     * @param processDir The directory containing process modules
      * @param name The process name
      */
-    public JavaScriptProcess(File processDir, String name) {
+    public JavaScriptProcess(String name) {
         identifier = name;
         Scriptable exports;
         jsModules = GeoServerExtensions.bean(JavaScriptModules.class);
