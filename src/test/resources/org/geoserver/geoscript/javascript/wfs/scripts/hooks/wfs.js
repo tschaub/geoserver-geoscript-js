@@ -1,5 +1,4 @@
 
-
 exports.beforeTransaction = function(details, request) {
     LOGGER.info("beforeTransaction");
     var inserts = details.inserts;
