@@ -5,8 +5,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 
-import org.geoserver.data.test.MockData;
-import org.geoserver.data.util.IOUtils;
 import org.geoserver.test.GeoServerTestSupport;
 import org.mozilla.javascript.Scriptable;
 
@@ -15,15 +13,6 @@ import org.mozilla.javascript.Scriptable;
  */
 public class JavaScriptModulesTest extends GeoServerTestSupport {
 
-    @Override
-    protected void populateDataDirectory(MockData dataDirectory) throws Exception {
-        String testScripts = "test_scripts_1";
-        File fromDir = new File(getClass().getResource(testScripts).getFile());
-        File toDir = new File(dataDirectory.getDataDirectoryRoot(), "scripts");
-        IOUtils.deepCopy(fromDir, toDir);
-        super.populateDataDirectory(dataDirectory);
-    }
-    
     /**
      * Test method for {@link org.geoserver.geoscript.javascript.JavaScriptModules#getModulePaths()}.
      * @throws URISyntaxException 
