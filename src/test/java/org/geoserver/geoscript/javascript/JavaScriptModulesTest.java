@@ -8,6 +8,7 @@ import java.util.List;
 import org.geoserver.data.test.MockData;
 import org.geoserver.data.util.IOUtils;
 import org.geoserver.test.GeoServerTestSupport;
+import org.mozilla.javascript.Scriptable;
 
 /**
  *
@@ -38,6 +39,18 @@ public class JavaScriptModulesTest extends GeoServerTestSupport {
             assertTrue("path is directory", file.isDirectory());
             assertTrue("directory exists", file.exists());
         }
+    }
+
+    /**
+     * Test method for {@link org.geoserver.geoscript.javascript.JavaScriptModules#require()}.
+     */
+    public void testRequireGeoScript() {
+        JavaScriptModules jsModules = (JavaScriptModules) applicationContext.getBean("JSModules");
+        Scriptable exports = jsModules.require("geoscript");
+        Object geomObj = exports.get("geom", exports);
+        assertTrue("geom in exports", geomObj instanceof Scriptable);
+        Object projObj = exports.get("proj", exports);
+        assertTrue("proj in exports", projObj instanceof Scriptable);
     }
 
 }
