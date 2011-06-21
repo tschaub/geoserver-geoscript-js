@@ -3,12 +3,12 @@ package org.geoserver.geoscript.javascript;
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import org.geoserver.data.test.MockData;
+import org.geoserver.data.util.IOUtils;
 import org.geoserver.test.GeoServerTestSupport;
 
 /**
@@ -18,13 +18,10 @@ public class JavaScriptModulesTest extends GeoServerTestSupport {
 
     @Override
     protected void populateDataDirectory(MockData dataDirectory) throws Exception {
-        URL url = getClass().getResource("test_scripts_1");
-        File[] scripts = recursiveListFiles(new File(url.getFile()));
-        for (File script : scripts) {
-            String path = script.getPath();
-            // TODO:  script.toURI().relativize(arg0)
-//            dataDirectory.copyTo(getClass().getResourceAsStream(path), path);
-        }
+        String testScripts = "test_scripts_1";
+        File fromDir = new File(getClass().getResource(testScripts).getFile());
+        File toDir = new File(dataDirectory.getDataDirectoryRoot(), "scripts");
+        IOUtils.deepCopy(fromDir, toDir);
         super.populateDataDirectory(dataDirectory);
     }
     
@@ -42,26 +39,6 @@ public class JavaScriptModulesTest extends GeoServerTestSupport {
             File file = new File(uri.getPath());
             assertTrue("path is directory", file.isDirectory());
             assertTrue("directory exists", file.exists());
-        }
-    }
-
-    private static File[] recursiveListFiles(File dir) {
-        if (!dir.isDirectory()) {
-            throw new IllegalArgumentException(dir + " is not a directory");
-        }
-        List<File> fileList = new ArrayList<File>();
-        recursiveListFilesHelper(dir, fileList);
-        Collections.sort(fileList);
-        return fileList.toArray(new File[fileList.size()]);
-    }
-
-    private static void recursiveListFilesHelper(File dir, List<File> fileList) {
-        for (File f: dir.listFiles()) {
-            if (f.isDirectory()) {
-                recursiveListFilesHelper(f, fileList);
-            } else {
-                fileList.add(f);
-            }
         }
     }
 
