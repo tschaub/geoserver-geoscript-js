@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Map;
 
+import net.opengis.wfs.TransactionResponseType;
 import net.opengis.wfs.TransactionType;
 import net.opengis.wfs.impl.DeleteElementTypeImpl;
 import net.opengis.wfs.impl.InsertElementTypeImpl;
@@ -222,7 +223,7 @@ public class JavaScriptTransactionPlugin implements TransactionPlugin {
     }
     
 
-    public void afterTransaction(TransactionType request, boolean committed) {
+    public void afterTransaction(TransactionType request, TransactionResponseType result, boolean committed) {
         try {
             if (committed) {
                 Function function = getFunction("afterTransaction");
