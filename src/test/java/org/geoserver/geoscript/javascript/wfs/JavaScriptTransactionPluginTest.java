@@ -23,7 +23,8 @@ public class JavaScriptTransactionPluginTest extends WFSTestSupport {
         String xml = FileUtils.readFileToString(insertXml, "UTF-8");
 
         Document dom = postAsDOM("wfs", xml);
-        print(dom);
+        assertTrue(dom.getElementsByTagName("wfs:InsertResults").getLength() != 0);
+//        print(dom);
 
     }
 
