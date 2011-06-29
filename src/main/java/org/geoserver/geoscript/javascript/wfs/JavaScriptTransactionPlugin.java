@@ -4,22 +4,24 @@ package org.geoserver.geoscript.javascript.wfs;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
+import net.opengis.wfs.DeleteElementType;
+import net.opengis.wfs.InsertElementType;
 import net.opengis.wfs.TransactionResponseType;
 import net.opengis.wfs.TransactionType;
-import net.opengis.wfs.impl.DeleteElementTypeImpl;
-import net.opengis.wfs.impl.InsertElementTypeImpl;
-import net.opengis.wfs.impl.UpdateElementTypeImpl;
+import net.opengis.wfs.UpdateElementType;
 
 import org.apache.commons.collections.MultiHashMap;
-import org.eclipse.emf.common.util.EList;
+import org.eclipse.emf.ecore.EObject;
 import org.geoserver.geoscript.javascript.JavaScriptModules;
 import org.geoserver.wfs.TransactionEvent;
 import org.geoserver.wfs.TransactionPlugin;
 import org.geoserver.wfs.WFSException;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureIterator;
-import org.geotools.feature.simple.SimpleFeatureImpl;
+import org.geotools.util.logging.Logging;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.JavaScriptException;
@@ -27,20 +29,111 @@ import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.type.Name;
+import org.springframework.util.Assert;
 
 /**
  * A plugin that allows hooks during WFS transactions.
  */
 public class JavaScriptTransactionPlugin implements TransactionPlugin {
     
-    static ThreadLocal<MultiHashMap> affectedFeatures = new ThreadLocal<MultiHashMap>();
     private JavaScriptModules jsModules;
     private Function featureConverter;
+    private Logger LOGGER = Logging.getLogger("org.geoserver.geoscript.javascript");
+    private static final String JS_TRANSACTION_INFO_PLACEHOLDER = "JS_TRANSACTION_INFO_PLACEHOLDER";
     
     public JavaScriptTransactionPlugin(JavaScriptModules jsModules) {
         this.jsModules = jsModules;
     }
     
+
+    /**
+     * Runs a "beforeTransaction" method exported by a wfs.js script in the
+     * scripts/hooks directory of the data directory.  This provides an 
+     * opportunity for a wfs.js script to interact with the transaction
+     * request before it proceeds.
+     * 
+     * @see net.opengis.wfs.TransactionResponseType#beforeTransaction(net.opengis.wfs.TransactionType)
+     */
+    public TransactionType beforeTransaction(TransactionType request) throws WFSException {
+        Function function = getFunction("beforeTransaction");
+        if (function != null) {
+            Object[] args = { request };
+            callFunction(function, args);
+        }
+        return request;
+    }
+
+    /**
+     * Caches features affected by the transaction for use in the 
+     * {@link beforeCommit} and {@link afterTransaction} hooks.
+     * 
+     * @see org.geoserver.wfs.TransactionListener#dataStoreChange(org.geoserver.wfs.TransactionEvent)
+     */
+    public void dataStoreChange(final TransactionEvent event) throws WFSException {
+        // only cache features if we'll need them after the transaction
+        Function function = getFunction("afterTransaction");
+        if (function != null) {
+            try {
+                cacheFeatures(event);
+            } catch (RuntimeException e) {
+                // let the transaction succeed, but warn about the exception
+                LOGGER.log(Level.WARNING, "Trouble getting features from data store change", e);
+            }
+        }
+    }
+
+    /**
+     * Runs a "beforeCommit" method exported by a wfs.js script in the
+     * scripts/hooks directory of the data directory.  This provides an 
+     * opportunity for a wfs.js script to interact with features affected
+     * by the transaction before they are committed.
+     * 
+     * @see net.opengis.wfs.TransactionResponseType#beforeCommit(net.opengis.wfs.TransactionType)
+     */
+    public void beforeCommit(TransactionType request) throws WFSException {
+        Function function = getFunction("beforeCommit");
+        if (function != null) {
+            Object[] args = { getTransactionDetail(request), request };
+            callFunction(function, args);
+        }
+    }
+    
+
+    /**
+     * Runs a "afterTransaction" method exported by a wfs.js script in the
+     * scripts/hooks directory of the data directory.  This provides an 
+     * opportunity for a wfs.js script to interact with features affected
+     * by the transaction after they are committed.
+     * 
+     * @see net.opengis.wfs.TransactionResponseType#afterTransaction(net.opengis.wfs.TransactionType)
+     */
+    public void afterTransaction(TransactionType request, TransactionResponseType result, boolean committed) {
+        if (committed) {
+            Function function = getFunction("afterTransaction");
+            if (function != null) {
+                Object[] args = { getTransactionDetail(request), request };
+                callFunction(function, args);
+            }
+        }
+    }
+    
+    /**
+     * Looks for a "priority" property exported by a wfs.js script in the
+     * scripts/hooks directory of the data directory.  This provides an 
+     * opportunity for a wfs.js script to set its priority among other
+     * WFS transaction listeners.  By default, the wfs.js hooks get no 
+     * special priority (level 0).
+     * 
+     * @see net.opengis.wfs.TransactionResponseType#getPriority()
+     */
+    public int getPriority() {
+        Integer priority = 0;
+        Scriptable export = getExport("priority");
+        if (export instanceof Number) {
+            priority = (Integer) Context.jsToJava(export, Integer.class);
+        }
+        return priority;
+    }
 
     private Function getFeatureConverter() {
         if (featureConverter == null) {
@@ -86,12 +179,78 @@ public class JavaScriptTransactionPlugin implements TransactionPlugin {
         return function;
     }
 
-    public void dataStoreChange(TransactionEvent event) throws WFSException {
-        if (affectedFeatures.get() == null) {
-            affectedFeatures.set(new MultiHashMap());
+    private void cacheFeatures(final TransactionEvent event) {
+        final Object source = event.getSource();
+        if (!(source instanceof InsertElementType || source instanceof UpdateElementType || source instanceof DeleteElementType)) {
+            return;
         }
-        MultiHashMap map = affectedFeatures.get();
-        map.put(event.getType().name(), event.getAffectedFeatures());
+
+        final EObject originatingTransactionRequest = (EObject) source;
+        Assert.notNull(originatingTransactionRequest);
+
+        final SimpleFeatureCollection featureCollection = event.getAffectedFeatures();
+        Name schemaName = featureCollection.getSchema().getName();
+        String local = schemaName.getLocalPart();
+        String uri = schemaName.getNamespaceURI();
+        
+        MultiHashMap featureCache = getFeatureCache(event.getRequest());
+        String type = event.getType().name();
+
+        SimpleFeatureIterator features = featureCollection.features();
+        Context cx = jsModules.enterContext();
+        try {
+            while (features.hasNext()) {
+                SimpleFeature feature = features.next();
+                Scriptable info = cx.newObject(jsModules.global);
+                ScriptableObject.putProperty(info, "name", local);
+                ScriptableObject.putProperty(info, "uri", uri);
+                Object featureObj = getFeatureConverter().call(
+                        cx, jsModules.global, jsModules.global, new Object[] { feature });
+                ScriptableObject.putProperty(info, "feature", featureObj);
+                featureCache.put(type, info);
+            }
+        } finally {
+            features.close();
+            Context.exit();
+        }
+    }
+    
+    private MultiHashMap getFeatureCache(TransactionType transaction) {
+        @SuppressWarnings("unchecked")
+        final Map<Object, Object> extendedProperties = transaction.getExtendedProperties();
+
+        MultiHashMap featureCache = (MultiHashMap) extendedProperties.get(JS_TRANSACTION_INFO_PLACEHOLDER);
+        if (featureCache == null) {
+            featureCache = new MultiHashMap();
+            extendedProperties.put(JS_TRANSACTION_INFO_PLACEHOLDER, featureCache);
+        }
+        return featureCache;
+    }
+    
+    private Scriptable getTransactionDetail(TransactionType transaction) {
+        MultiHashMap featureCache = getFeatureCache(transaction);
+        
+        Scriptable details = null;
+        Context cx = jsModules.enterContext();
+        try {
+            details = cx.newObject(jsModules.global);
+            @SuppressWarnings("unchecked")
+            Iterator<Map.Entry<String,ArrayList<Scriptable>>> it = featureCache.entrySet().iterator();
+            while (it.hasNext()) {
+                Map.Entry<String, ArrayList<Scriptable>> entry = it.next();
+                String type = entry.getKey();
+                ArrayList<Scriptable> featureList = entry.getValue();
+                Scriptable array = cx.newArray(jsModules.global, featureList.size());
+                for (int index=0; index<featureList.size(); ++index) {
+                    Scriptable info = featureList.get(index);
+                    array.put(index, array, info);
+                }
+                details.put(type, details, array);
+            }
+        } finally {
+            Context.exit();
+        }
+        return details;
     }
 
     private void handleResult(Object result) throws WFSException {
@@ -120,130 +279,10 @@ public class JavaScriptTransactionPlugin implements TransactionPlugin {
         Object result = null;
         try {
             result = jsModules.callFunction(function, args);
-        } 
-        catch(Exception e) {
+        } catch(Exception e) {
             throw new WFSException(e.getMessage(), e);
         }
         handleResult(result);
-    }
-
-    private Scriptable getTransactionDetails() {
-        MultiHashMap eventMap = affectedFeatures.get();
-        Context cx = Context.enter();
-        Scriptable details = null;
-        try {
-            details = cx.newObject(jsModules.global);
-            for (Iterator<Map.Entry<String,ArrayList<SimpleFeatureCollection>>> it = eventMap.entrySet().iterator(); it.hasNext();) {
-                Map.Entry<String,ArrayList<SimpleFeatureCollection>> entry = it.next();
-                String eventName = entry.getKey();
-                ArrayList<SimpleFeatureCollection> collection = entry.getValue();
-                Scriptable array = cx.newArray(jsModules.global, collection.size()); // length will change
-                int index = 0;
-                for(Iterator<SimpleFeatureCollection> it2 = collection.iterator(); it2.hasNext();) {
-                    SimpleFeatureCollection fc = it2.next();
-                    Name schemaName = fc.getSchema().getName();
-                    String local = schemaName.getLocalPart();
-                    String uri = schemaName.getNamespaceURI();
-                    SimpleFeatureIterator features = fc.features();
-                    try {
-                        while (features.hasNext()) {
-                            SimpleFeature feature = features.next();
-                            Scriptable o = cx.newObject(jsModules.global);
-                            ScriptableObject.putProperty(o, "uri", uri);
-                            ScriptableObject.putProperty(o, "name", local);
-                            ScriptableObject.putProperty(o, "id", feature.getID());
-                            array.put(index, array, o);
-                            index += 1;
-                        }
-                    } finally {
-                        features.close();
-                    }
-                }
-                ScriptableObject.putProperty(details, eventName, array);
-            }
-        } finally { 
-            Context.exit();
-        }
-        return details;
-    }
-
-    
-    private Scriptable getRequestDetails(TransactionType request) {
-        EList<InsertElementTypeImpl> insertList = request.getInsert();
-        EList<UpdateElementTypeImpl> updateList = request.getUpdate();
-        EList<DeleteElementTypeImpl> deleteList = request.getDelete();
-        Context cx = Context.enter();
-        Scriptable details = null;
-        try {
-            details = cx.newObject(jsModules.global);
-            // deal with inserts
-            Scriptable inserts = cx.newArray(jsModules.global, insertList.size()); // length will change
-            int index = 0;
-            for (Iterator<InsertElementTypeImpl> it = insertList.iterator(); it.hasNext();) {
-                InsertElementTypeImpl insertEl = it.next();
-                EList<SimpleFeatureImpl> featureList = insertEl.getFeature();
-                for (Iterator<SimpleFeatureImpl> features = featureList.iterator(); features.hasNext();) {
-                    Scriptable obj = cx.newObject(jsModules.global);
-                    SimpleFeatureImpl feature = features.next();
-                    Name name = feature.getType().getName();
-                    Object[] args = { feature };
-                    Object featureObj = getFeatureConverter().call(
-                            cx, jsModules.global, jsModules.global, args);
-                    ScriptableObject.putProperty(obj, "feature", featureObj);
-                    ScriptableObject.putProperty(obj, "uri", name.getURI());
-                    ScriptableObject.putProperty(obj, "name", name.getLocalPart());
-                    ScriptableObject.putProperty(inserts, index, obj);
-                    index = index + 1;
-                }
-            }
-            ScriptableObject.putProperty(details, "inserts", inserts);
-            // TODO: deal with updates
-            // TODO: deal with deletes
-        } finally {
-            Context.exit();
-        }
-        
-        return details;
-    }
-    public TransactionType beforeTransaction(TransactionType request) throws WFSException {
-        Function function = getFunction("beforeTransaction");
-        if (function != null) {
-            Object[] args = { getRequestDetails(request), request };
-            callFunction(function, args);
-        }
-        return request;
-    }
-
-    public void beforeCommit(TransactionType request) throws WFSException {
-        Function function = getFunction("beforeCommit");
-        if (function != null) {
-            Object[] args = { getRequestDetails(request), request };
-            callFunction(function, args);
-        }
-    }
-    
-
-    public void afterTransaction(TransactionType request, TransactionResponseType result, boolean committed) {
-        try {
-            if (committed) {
-                Function function = getFunction("afterTransaction");
-                if (function != null) {
-                    Object[] args = { getTransactionDetails(), request };
-                    callFunction(function, args);
-                }
-            }
-        } finally {
-            affectedFeatures.remove();
-        }
-    }
-
-    public int getPriority() {
-        Integer priority = 0;
-        Scriptable export = getExport("priority");
-        if (export instanceof Number) {
-            priority = (Integer) Context.jsToJava(export, Integer.class);
-        }
-        return priority;
     }
 
 }

@@ -9,6 +9,11 @@ import org.geoserver.wfs.WFSTestSupport;
 import org.w3c.dom.Document;
 
 public class JavaScriptTransactionPluginTest extends WFSTestSupport {
+    
+    @Override
+    protected String getLogConfiguration() {
+        return "/DEFAULT_LOGGING.properties";
+    }
 
     @Override
     protected void populateDataDirectory(MockData dataDirectory) throws Exception {
@@ -24,7 +29,7 @@ public class JavaScriptTransactionPluginTest extends WFSTestSupport {
 
         Document dom = postAsDOM("wfs", xml);
         assertTrue(dom.getElementsByTagName("wfs:InsertResults").getLength() != 0);
-//        print(dom);
+        print(dom);
 
     }
 
