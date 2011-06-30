@@ -12,8 +12,10 @@ import net.opengis.wfs.InsertElementType;
 import net.opengis.wfs.TransactionResponseType;
 import net.opengis.wfs.TransactionType;
 import net.opengis.wfs.UpdateElementType;
+import net.opengis.wfs.impl.NativeTypeImpl;
 
 import org.apache.commons.collections.MultiHashMap;
+import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.EObject;
 import org.geoserver.geoscript.javascript.JavaScriptModules;
 import org.geoserver.wfs.TransactionEvent;
@@ -39,7 +41,7 @@ public class JavaScriptTransactionPlugin implements TransactionPlugin {
     private JavaScriptModules jsModules;
     private Function featureConverter;
     private Logger LOGGER = Logging.getLogger("org.geoserver.geoscript.javascript");
-    private static final String JS_TRANSACTION_INFO_PLACEHOLDER = "JS_TRANSACTION_INFO_PLACEHOLDER";
+    private static final String JS_TRANSACTION_CACHE = "JS_TRANSACTION_CACHE";
     
     public JavaScriptTransactionPlugin(JavaScriptModules jsModules) {
         this.jsModules = jsModules;
@@ -219,21 +221,22 @@ public class JavaScriptTransactionPlugin implements TransactionPlugin {
         @SuppressWarnings("unchecked")
         final Map<Object, Object> extendedProperties = transaction.getExtendedProperties();
 
-        MultiHashMap featureCache = (MultiHashMap) extendedProperties.get(JS_TRANSACTION_INFO_PLACEHOLDER);
+        MultiHashMap featureCache = (MultiHashMap) extendedProperties.get(JS_TRANSACTION_CACHE);
         if (featureCache == null) {
             featureCache = new MultiHashMap();
-            extendedProperties.put(JS_TRANSACTION_INFO_PLACEHOLDER, featureCache);
+            extendedProperties.put(JS_TRANSACTION_CACHE, featureCache);
         }
         return featureCache;
     }
     
     private Scriptable getTransactionDetail(TransactionType transaction) {
         MultiHashMap featureCache = getFeatureCache(transaction);
-        
+        EList<?> nativeList = transaction.getNative();
         Scriptable details = null;
         Context cx = jsModules.enterContext();
         try {
             details = cx.newObject(jsModules.global);
+            // add map of event -> features
             @SuppressWarnings("unchecked")
             Iterator<Map.Entry<String,ArrayList<Scriptable>>> it = featureCache.entrySet().iterator();
             while (it.hasNext()) {
@@ -247,6 +250,18 @@ public class JavaScriptTransactionPlugin implements TransactionPlugin {
                 }
                 details.put(type, details, array);
             }
+            // add native elements
+            int len = nativeList.size();
+            Scriptable natives = cx.newArray(jsModules.global, len);
+            for (int i=0; i<len; ++i) {
+                NativeTypeImpl nat = (NativeTypeImpl) nativeList.get(i);
+                Scriptable info = cx.newObject(jsModules.global);
+                info.put("vendorId", info, nat.getVendorId());
+                info.put("safeToIgnore", info, nat.isSafeToIgnore());
+                info.put("value", info, nat.getValue().trim());
+                natives.put(i, natives, info);
+            }
+            details.put("natives", details, natives);
         } finally {
             Context.exit();
         }

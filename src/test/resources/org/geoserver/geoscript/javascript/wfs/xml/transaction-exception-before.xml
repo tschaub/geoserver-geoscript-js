@@ -86,10 +86,14 @@
             <FeatureId fid="PrimitiveGeoFeature.f002"/>
         </ogc:Filter>
     </wfs:Delete>
-    <wfs:Native vendorId="vendor1" safeToIgnore="true">
-        Content of first native element.
+    <!--  
+        This next native element should cause the beforeCommit method
+        exported from wfs.js to return an object indicating an exception.
+     -->
+    <wfs:Native vendorId="geoscript-js" safeToIgnore="true">
+        beforeCommit throws
     </wfs:Native>
-    <wfs:Native vendorId="vendor2" safeToIgnore="true">
-        Content of first native element.
+    <wfs:Native vendorId="bogus" safeToIgnore="true">
+        afterTransaction throws
     </wfs:Native>
 </wfs:Transaction>
