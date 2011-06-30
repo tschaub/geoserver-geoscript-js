@@ -23,14 +23,16 @@ public class JavaScriptTransactionPluginTest extends WFSTestSupport {
         super.populateDataDirectory(dataDirectory);
     }
     
-    public void testInsert() throws Exception {
-        File insertXml = new File(getClass().getResource("xml/insert.xml").getFile());
-        String xml = FileUtils.readFileToString(insertXml, "UTF-8");
+    public void testTransaction() throws Exception {
 
-        Document dom = postAsDOM("wfs", xml);
-        assertTrue(dom.getElementsByTagName("wfs:InsertResults").getLength() != 0);
-        print(dom);
+      File file = new File(getClass().getResource("xml/transaction.xml").getFile());
+      String xml = FileUtils.readFileToString(file, "UTF-8");
+
+      Document dom = postAsDOM("wfs", xml);
+      assertTrue(dom.getElementsByTagName("wfs:InsertResults").getLength() != 0);
+      print(dom);
 
     }
+    
 
 }
