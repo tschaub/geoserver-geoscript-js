@@ -29,6 +29,7 @@ import org.mozilla.javascript.Function;
 import org.mozilla.javascript.JavaScriptException;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
+import org.mozilla.javascript.tools.shell.Global;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.type.Name;
 import org.springframework.util.Assert;
@@ -200,14 +201,15 @@ public class JavaScriptTransactionPlugin implements TransactionPlugin {
 
         SimpleFeatureIterator features = featureCollection.features();
         Context cx = jsModules.enterContext();
+        Global global = jsModules.getSharedGlobal();
         try {
             while (features.hasNext()) {
                 SimpleFeature feature = features.next();
-                Scriptable info = cx.newObject(jsModules.global);
+                Scriptable info = cx.newObject(global);
                 ScriptableObject.putProperty(info, "name", local);
                 ScriptableObject.putProperty(info, "uri", uri);
                 Object featureObj = getFeatureConverter().call(
-                        cx, jsModules.global, jsModules.global, new Object[] { feature });
+                        cx, global, global, new Object[] { feature });
                 ScriptableObject.putProperty(info, "feature", featureObj);
                 featureCache.put(type, info);
             }
@@ -234,8 +236,9 @@ public class JavaScriptTransactionPlugin implements TransactionPlugin {
         EList<?> nativeList = transaction.getNative();
         Scriptable details = null;
         Context cx = jsModules.enterContext();
+        Global global = jsModules.getSharedGlobal();
         try {
-            details = cx.newObject(jsModules.global);
+            details = cx.newObject(global);
             // add map of event -> features
             @SuppressWarnings("unchecked")
             Iterator<Map.Entry<String,ArrayList<Scriptable>>> it = featureCache.entrySet().iterator();
@@ -243,7 +246,7 @@ public class JavaScriptTransactionPlugin implements TransactionPlugin {
                 Map.Entry<String, ArrayList<Scriptable>> entry = it.next();
                 String type = entry.getKey();
                 ArrayList<Scriptable> featureList = entry.getValue();
-                Scriptable array = cx.newArray(jsModules.global, featureList.size());
+                Scriptable array = cx.newArray(global, featureList.size());
                 for (int index=0; index<featureList.size(); ++index) {
                     Scriptable info = featureList.get(index);
                     array.put(index, array, info);
@@ -252,10 +255,10 @@ public class JavaScriptTransactionPlugin implements TransactionPlugin {
             }
             // add native elements
             int len = nativeList.size();
-            Scriptable natives = cx.newArray(jsModules.global, len);
+            Scriptable natives = cx.newArray(global, len);
             for (int i=0; i<len; ++i) {
                 NativeTypeImpl nat = (NativeTypeImpl) nativeList.get(i);
-                Scriptable info = cx.newObject(jsModules.global);
+                Scriptable info = cx.newObject(global);
                 info.put("vendorId", info, nat.getVendorId());
                 info.put("safeToIgnore", info, nat.isSafeToIgnore());
                 info.put("value", info, nat.getValue().trim());

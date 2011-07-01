@@ -38,7 +38,7 @@ import org.mozilla.javascript.tools.shell.Global;
 public class JavaScriptModules {
     
     private RequireBuilder requireBuilder;
-    transient public Global global;
+    transient private Global global;
     private Logger LOGGER = Logging.getLogger("org.geoserver.geoscript.javascript");
     
     private GeoServerResourceLoader resourceLoader;
@@ -74,12 +74,34 @@ public class JavaScriptModules {
     }
 
     /**
-     *  Create shared global and require builder one time only.
+     *  Creates and returns a shared global object.
+     *  
+     *  @return the shared global object
      */
-    private void init() {
+    public Global getSharedGlobal() {
         if (global == null) {
             synchronized (this) {
                 if (global == null) {
+                    global = createGlobal();
+                }
+            }
+        }
+        return global;
+    }
+
+    /**
+     * Creates and returns a shared require builder.  This allows loaded
+     * modules to be cached.  The require builder is constructed with a module
+     * provider that reloads modules only when they have changed on disk (with
+     * a 60 second interval).  This require builder will be configured with
+     * the module paths returned by {@link getModulePahts()}.
+     * 
+     * @return a shared require builder
+     */
+    private RequireBuilder getRequireBuilder() {
+        if (requireBuilder == null) {
+            synchronized (this) {
+                if (requireBuilder == null) {
                     requireBuilder = new RequireBuilder();
                     requireBuilder.setSandboxed(false);
                     List<String> modulePaths = getModulePaths();
@@ -106,18 +128,33 @@ public class JavaScriptModules {
                     requireBuilder.setModuleScriptProvider(
                             new SoftCachingModuleScriptProvider(
                                     new UrlModuleSourceProvider(uris, null)));
-                    global = createGlobal();
                 }
             }
         }
+        return requireBuilder;
     }
 
+    /**
+     * Create a new global object.
+     * 
+     * When the shared global object (accessible with {@link getSharedGlobal()}
+     * should not be used, this method can be used to create a new global. This
+     * global will have standard objects installed (Object, String, Number, 
+     * Date, etc.).  In addition, a "require" method will be available for 
+     * loading exports from JavaScript modules.  A "LOGGER" object is also
+     * available for logging with "info" and "warning" methods.
+     * 
+     * @return a new global object
+     */
     public Global createGlobal() {
         Global global = null;
         Context cx = enterContext();
         try {
             global = new Global();
             global.initStandardObjects(cx, true);
+            
+            // install require using shared require builder
+            installRequire(cx, global);
             
             // allow logging from js modules
             global.put("LOGGER", global, LOGGER);
@@ -127,18 +164,24 @@ public class JavaScriptModules {
         return global;
     }
     
-    public Scriptable require(String locator) {
-        init();
-        return require(locator, global);
+    private Require installRequire(Context cx, Global global) {
+        RequireBuilder rb = getRequireBuilder();
+        Require require = rb.createRequire(cx, global);
+        require.install(global);
+        return require;
     }
 
+    public Scriptable require(String locator) {
+        Global global = getSharedGlobal();
+        return require(locator, global);
+    }
+    
+
     public Scriptable require(String locator, Global global) {
-        init();
         Scriptable exports = null;
         Context cx = enterContext();
         try {
-            Require require = requireBuilder.createRequire(cx, global);
-            require.install(global);
+            Require require = installRequire(cx, global);
             Object exportsObj = require.call(
                     cx, global, global, new String[] {locator});
             if (exportsObj instanceof Scriptable) {

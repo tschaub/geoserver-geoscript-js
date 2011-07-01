@@ -19,6 +19,7 @@ import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.Wrapper;
+import org.mozilla.javascript.tools.shell.Global;
 import org.opengis.feature.type.AttributeDescriptor;
 import org.opengis.util.InternationalString;
 import org.opengis.util.ProgressListener;
@@ -152,13 +153,14 @@ public class JavaScriptProcess implements Process{
 
     private Scriptable mapToJsObject(Map<String,Object> map) {
         Context cx = jsModules.enterContext();
+        Global global = jsModules.getSharedGlobal();
         Scriptable obj;
         try {
-            obj = cx.newObject(jsModules.global);
+            obj = cx.newObject(global);
             for (Map.Entry<String,Object> entry : map.entrySet()) {
                 obj.put(entry.getKey(), 
                         obj, 
-                        Context.javaToJS(entry.getValue(), jsModules.global));
+                        Context.javaToJS(entry.getValue(), global));
             }
         } finally { 
             Context.exit();
