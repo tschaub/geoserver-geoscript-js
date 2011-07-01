@@ -120,8 +120,7 @@ public class JavaScriptModules {
             global.initStandardObjects(cx, true);
             
             // allow logging from js modules
-            Object wrappedLogger = Context.javaToJS(LOGGER, global);
-            global.put("LOGGER", global, wrappedLogger);
+            global.put("LOGGER", global, LOGGER);
         } finally {
             Context.exit();
         }
