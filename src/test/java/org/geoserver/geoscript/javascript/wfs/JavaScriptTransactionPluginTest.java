@@ -64,10 +64,17 @@ public class JavaScriptTransactionPluginTest extends WFSTestSupport {
         String xml = FileUtils.readFileToString(file, "UTF-8");
         
         Document dom = postAsDOM("wfs", xml);
-        print(dom);
+        
+        Element exception = getFirstElementByTagName(dom, "ows:Exception");
 
-        Element exText = getFirstElementByTagName(dom, "ows:ExceptionText");
-        assertEquals("correct message", "PreInsert: 2 PreUpdate: 1 PostUpdate: 1 PostDelete: 1 natives: 2", exText.getFirstChild().getNodeValue());
+        String locator = exception.getAttribute("locator");
+        assertEquals("correct locator", "beforeCommit", locator);
+        
+        String code = exception.getAttribute("exceptionCode");
+        assertEquals("correct code", "234", code);
+
+        Element text = getFirstElementByTagName(exception, "ows:ExceptionText");
+        assertEquals("correct message", "PreInsert: 2 PreUpdate: 1 PostUpdate: 1 PostDelete: 1 natives: 2", text.getFirstChild().getNodeValue());
 
       }
 
@@ -84,10 +91,16 @@ public class JavaScriptTransactionPluginTest extends WFSTestSupport {
         String xml = FileUtils.readFileToString(file, "UTF-8");
         
         Document dom = postAsDOM("wfs", xml);
-        print(dom);
+        Element exception = getFirstElementByTagName(dom, "ows:Exception");
 
-        Element exText = getFirstElementByTagName(dom, "ows:ExceptionText");
-        assertEquals("correct message", "PreInsert: 2 PreUpdate: 1 PostUpdate: 1 PostDelete: 1 natives: 2", exText.getFirstChild().getNodeValue());
+        String locator = exception.getAttribute("locator");
+        assertEquals("correct locator", "afterTransaction", locator);
+        
+        String code = exception.getAttribute("exceptionCode");
+        assertEquals("correct code", "234", code);
+
+        Element text = getFirstElementByTagName(exception, "ows:ExceptionText");
+        assertEquals("correct message", "PreInsert: 2 PreUpdate: 1 PostUpdate: 1 PostDelete: 1 natives: 2", text.getFirstChild().getNodeValue());
 
       }
 
