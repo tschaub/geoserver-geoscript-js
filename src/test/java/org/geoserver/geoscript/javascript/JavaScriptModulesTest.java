@@ -42,4 +42,16 @@ public class JavaScriptModulesTest extends GeoServerTestSupport {
         assertTrue("proj in exports", projObj instanceof Scriptable);
     }
 
+    /**
+     * Test method for {@link org.geoserver.geoscript.javascript.JavaScriptModules#require()}.
+     */
+    public void testRequireGeoServer() {
+        JavaScriptModules jsModules = (JavaScriptModules) applicationContext.getBean("JSModules");
+        Scriptable exports = jsModules.require("geoserver");
+        Object catalogObj = exports.get("catalog", exports);
+        assertTrue("catalog in exports", catalogObj instanceof Scriptable);
+        Object processObj = exports.get("process", exports);
+        assertTrue("process in exports", processObj instanceof Scriptable);
+    }
+
 }
