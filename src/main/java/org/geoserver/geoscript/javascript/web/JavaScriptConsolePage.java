@@ -18,7 +18,6 @@ import org.geoserver.platform.GeoServerExtensions;
 import org.geoserver.web.GeoServerSecuredPage;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
-import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.tools.shell.Global;
 
 public class JavaScriptConsolePage extends GeoServerSecuredPage {
@@ -43,7 +42,7 @@ public class JavaScriptConsolePage extends GeoServerSecuredPage {
             throw new RuntimeException(
                     "Failed to locate exports in module: " + locator);
         }
-        ScriptableObject.putProperty((Scriptable) global, "catalog", (Scriptable) exports);
+        global.put("catalog", global, exports);
 
         final WebMarkupContainer container = new WebMarkupContainer("results-wrapper");
         final ListView<?> resultsDisplay = 

@@ -18,7 +18,6 @@ import org.geotools.util.logging.Logging;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.Scriptable;
-import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.Wrapper;
 import org.opengis.feature.type.AttributeDescriptor;
 import org.opengis.util.InternationalString;
@@ -157,11 +156,9 @@ public class JavaScriptProcess implements Process{
         try {
             obj = cx.newObject(jsModules.global);
             for (Map.Entry<String,Object> entry : map.entrySet()) {
-                ScriptableObject.putProperty(
-                    obj, 
-                    entry.getKey(), 
-                    Context.javaToJS(entry.getValue(), jsModules.global)
-                );
+                obj.put(entry.getKey(), 
+                        obj, 
+                        Context.javaToJS(entry.getValue(), jsModules.global));
             }
         } finally { 
             Context.exit();

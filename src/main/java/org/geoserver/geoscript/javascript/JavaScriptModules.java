@@ -21,7 +21,6 @@ import org.geotools.util.logging.Logging;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.Scriptable;
-import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.commonjs.module.Require;
 import org.mozilla.javascript.commonjs.module.RequireBuilder;
 import org.mozilla.javascript.commonjs.module.provider.SoftCachingModuleScriptProvider;
@@ -122,7 +121,7 @@ public class JavaScriptModules {
             
             // allow logging from js modules
             Object wrappedLogger = Context.javaToJS(LOGGER, global);
-            ScriptableObject.putProperty(global, "LOGGER", wrappedLogger);
+            global.put("LOGGER", global, wrappedLogger);
         } finally {
             Context.exit();
         }
