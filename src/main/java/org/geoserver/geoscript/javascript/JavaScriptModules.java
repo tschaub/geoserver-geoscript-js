@@ -208,6 +208,35 @@ public class JavaScriptModules {
     }
     
     /**
+     * Evaluate a JavaScript source string in the global scope.
+     * 
+     * @param source the string to evaluate as JavaScript
+     * @return the result of evaluating the string
+     */
+    public Object eval(String source) {
+        Global global = getSharedGlobal();
+        return eval(global, source);
+    }
+    
+    /**
+     * Evaluate a JavaScript source string in the scope of the provided global.
+     * 
+     * @param source the string to evaluate as JavaScript
+     * @param global the execution scope
+     * @return the result of evaluating the string
+     */
+    public Object eval(Global global, String source) {
+        Object result = null;
+        Context cx = enterContext();
+        try {
+            result = cx.evaluateString(global, source, "<input>", 1, null);
+        } finally {
+            Context.exit();
+        }
+        return result;
+    }
+    
+    /**
      * Associate a context with the current thread.  This calls Context.enter()
      * and test the language version to 170.
      * @return a Context associated with the thread

@@ -6,6 +6,7 @@ import java.net.URISyntaxException;
 import java.util.List;
 
 import org.geoserver.test.GeoServerTestSupport;
+import org.mozilla.javascript.NativeArray;
 import org.mozilla.javascript.Scriptable;
 
 /**
@@ -52,6 +53,33 @@ public class JavaScriptModulesTest extends GeoServerTestSupport {
         assertTrue("catalog in exports", catalogObj instanceof Scriptable);
         Object processObj = exports.get("process", exports);
         assertTrue("process in exports", processObj instanceof Scriptable);
+    }
+
+    /**
+     * Test method for {@link org.geoserver.geoscript.javascript.JavaScriptModules#eval(String source)}.
+     */
+    public void testEval() {
+        JavaScriptModules jsModules = (JavaScriptModules) applicationContext.getBean("JSModules");
+
+        // add in JavaScript, get java.lang.Integer back
+        Object result = jsModules.eval("2 + 2");
+        assertEquals("js addition", 4, result);
+    }
+    
+    /**
+     * Test for catalog access through the geoserver.js module.
+     */
+    public void testGeoServerCatalogNamespaces() {
+        JavaScriptModules jsModules = (JavaScriptModules) applicationContext.getBean("JSModules");
+
+        // get list of namespaces in catalog
+        Object result = jsModules.eval("require('geoserver/catalog').namespaces");
+        assertTrue(result instanceof NativeArray);
+        NativeArray array = (NativeArray) result;
+        assertEquals("correct number of namespaces", 5, array.getLength());
+        Scriptable obj = (Scriptable) array.get(0);
+        assertEquals("first namespace alias", "cite", obj.get("alias", obj));
+        assertEquals("first namespace uri", "http://www.opengis.net/cite", obj.get("uri", obj));
     }
 
 }
