@@ -7,6 +7,7 @@ package org.geoserver.geoscript.javascript.process;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.geoserver.geoscript.javascript.JavaScriptModules;
@@ -42,8 +43,8 @@ public class JavaScriptProcess implements Process{
         try {
             exports = jsModules.require("processes/" + name);
         } catch (Exception e) {
-            String msg = "Failed to locate process: " + name;
-            LOGGER.warning(msg); // exceptions from constructor swallowed in GetCapabilities
+            String msg = "Trouble loading process: " + name;
+            LOGGER.log(Level.SEVERE , msg, e);
             throw new RuntimeException(msg, e);
         }
         Object processObj = exports.get("process", exports);
