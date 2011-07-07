@@ -22,7 +22,17 @@
         <copy todir="src/main/resources/org/geoserver/geoscript/javascript/modules">
             <fileset dir="externals/geoscript-js/lib"/>
         </copy>
+    	
+    	<antcall target="update"/>
 
     </target>
+	
+	<target name="update">
+        <echo message="copying GeoScript modules"/>
+        <copy todir="src/main/resources/org/geoserver/geoscript/javascript/modules">
+            <fileset dir="externals/geoscript-js/lib"/>
+        </copy>
+	</target>
+		
     
 </project>
