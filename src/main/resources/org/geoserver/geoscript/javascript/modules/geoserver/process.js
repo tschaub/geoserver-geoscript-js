@@ -1,17 +1,17 @@
-var GEOM = require("geoscript/geom");
 
 exports.execute = function(process, inputs) {
+    var field;
+    // convert inputs
     for (var key in inputs) {
-        if (process.inputs[key].type in GEOM) {
-            inputs[key] = GEOM.Geometry.from_(inputs[key]);
-        }
+        field = process.inputs[key];
+        inputs[key] = field.valueFrom_(inputs[key]);
     }
+    // execute
     var outputs = process.run(inputs);
     // convert outputs
     for (var key in outputs) {
-        if (process.outputs[key].type in GEOM) {
-            outputs[key] = outputs[key]._geometry;
-        }
+        field = process.outputs[key];
+        outputs[key] = field.valueTo_(outputs[key]);
     }
     return outputs;
 };
