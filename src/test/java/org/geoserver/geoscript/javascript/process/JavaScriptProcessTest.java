@@ -128,4 +128,102 @@ public class JavaScriptProcessTest extends GeoServerTestSupport {
         assertEquals("correct sum", exp, geom.getArea(), 1.0);
     }
 
+    public void testExecuteIntersectsBridgesHit() throws Exception {
+        JavaScriptProcess process = new JavaScriptProcess("intersects");
+        WKTReader wktReader = new WKTReader();
+
+        Map<String, Object> input = new HashMap<String, Object>();
+        input.put("geometry", wktReader.read("POINT (0.0002 0.0007)"));
+        input.put("namespace", "http://www.opengis.net/cite");
+        input.put("featureType", "Bridges");
+
+        Map<String,Object> result = process.execute(input, null);
+        assertTrue("intersects in results", result.containsKey("intersects"));
+        Object obj = result.get("intersects");
+        assertTrue("got back a boolean", obj instanceof Boolean);
+        assertTrue("intersects", (Boolean) obj);
+    }
+
+    public void testExecuteIntersectsBridgesMiss() throws Exception {
+        JavaScriptProcess process = new JavaScriptProcess("intersects");
+        WKTReader wktReader = new WKTReader();
+
+        Map<String, Object> input = new HashMap<String, Object>();
+        input.put("geometry", wktReader.read("POINT (10 0.0007)"));
+        input.put("namespace", "http://www.opengis.net/cite");
+        input.put("featureType", "Bridges");
+
+        Map<String,Object> result = process.execute(input, null);
+        assertTrue("intersects in results", result.containsKey("intersects"));
+        Object obj = result.get("intersects");
+        assertTrue("got back a boolean", obj instanceof Boolean);
+        assertFalse("intersects", (Boolean) obj);
+    }
+
+    public void testExecuteIntersectsBuildingsHit() throws Exception {
+        JavaScriptProcess process = new JavaScriptProcess("intersects");
+        WKTReader wktReader = new WKTReader();
+
+        Map<String, Object> input = new HashMap<String, Object>();
+        input.put("geometry", wktReader.read("POINT (0.00216 0.00084)"));
+        input.put("namespace", "http://www.opengis.net/cite");
+        input.put("featureType", "Buildings");
+
+        Map<String,Object> result = process.execute(input, null);
+        assertTrue("intersects in results", result.containsKey("intersects"));
+        Object obj = result.get("intersects");
+        assertTrue("got back a boolean", obj instanceof Boolean);
+        assertTrue("intersects", (Boolean) obj);
+    }
+
+    public void testExecuteIntersectsBuildingsMiss() throws Exception {
+        JavaScriptProcess process = new JavaScriptProcess("intersects");
+        WKTReader wktReader = new WKTReader();
+
+        Map<String, Object> input = new HashMap<String, Object>();
+        input.put("geometry", wktReader.read("POINT (10 0.00084)"));
+        input.put("namespace", "http://www.opengis.net/cite");
+        input.put("featureType", "Buildings");
+
+        Map<String,Object> result = process.execute(input, null);
+        assertTrue("intersects in results", result.containsKey("intersects"));
+        Object obj = result.get("intersects");
+        assertTrue("got back a boolean", obj instanceof Boolean);
+        assertFalse("intersects", (Boolean) obj);
+    }
+
+    public void testExecuteIntersectsBuildingsFilterHit() throws Exception {
+        JavaScriptProcess process = new JavaScriptProcess("intersects");
+        WKTReader wktReader = new WKTReader();
+
+        Map<String, Object> input = new HashMap<String, Object>();
+        input.put("geometry", wktReader.read("POINT (0.00216 0.00084)"));
+        input.put("namespace", "http://www.opengis.net/cite");
+        input.put("featureType", "Buildings");
+        input.put("filter", "ADDRESS LIKE '215 Main%'");
+
+        Map<String,Object> result = process.execute(input, null);
+        assertTrue("intersects in results", result.containsKey("intersects"));
+        Object obj = result.get("intersects");
+        assertTrue("got back a boolean", obj instanceof Boolean);
+        assertTrue("intersects", (Boolean) obj);
+    }
+
+    public void testExecuteIntersectsBuildingsFilterMiss() throws Exception {
+        JavaScriptProcess process = new JavaScriptProcess("intersects");
+        WKTReader wktReader = new WKTReader();
+
+        Map<String, Object> input = new HashMap<String, Object>();
+        input.put("geometry", wktReader.read("POINT (0.00216 0.00084)"));
+        input.put("namespace", "http://www.opengis.net/cite");
+        input.put("featureType", "Buildings");
+        input.put("filter", "ADDRESS LIKE '123 Main%'");
+
+        Map<String,Object> result = process.execute(input, null);
+        assertTrue("intersects in results", result.containsKey("intersects"));
+        Object obj = result.get("intersects");
+        assertTrue("got back a boolean", obj instanceof Boolean);
+        assertFalse("intersects", (Boolean) obj);
+    }
+
 }
