@@ -4,6 +4,9 @@ exports.execute = function(process, inputs) {
     // convert inputs
     for (var key in inputs) {
         field = process.inputs[key];
+        if (!field) {
+            throw new Error("Input '" + key + "' not found in process: " + process.title);
+        }
         inputs[key] = field.valueFrom_(inputs[key]);
     }
     // execute
