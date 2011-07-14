@@ -142,6 +142,10 @@ public class JavaScriptProcessTest extends GeoServerTestSupport {
         Object obj = result.get("intersects");
         assertTrue("got back a boolean", obj instanceof Boolean);
         assertTrue("intersects", (Boolean) obj);
+
+        // TODO: determine why this is not 1
+        assertEquals("intersects one", 1.0, result.get("count"));
+
     }
 
     public void testExecuteIntersectsBridgesMiss() throws Exception {
@@ -176,6 +180,26 @@ public class JavaScriptProcessTest extends GeoServerTestSupport {
         assertTrue("intersects", (Boolean) obj);
     }
 
+    public void testExecuteIntersectsBuildingsHitMultiple() throws Exception {
+        JavaScriptProcess process = new JavaScriptProcess("intersects");
+        WKTReader wktReader = new WKTReader();
+
+        Map<String, Object> input = new HashMap<String, Object>();
+        input.put("geometry", wktReader.read("LINESTRING (0.00216 0.00084, 0.001 0.00054)"));
+        input.put("namespace", "http://www.opengis.net/cite");
+        input.put("featureType", "Buildings");
+
+        Map<String,Object> result = process.execute(input, null);
+        assertTrue("intersects in results", result.containsKey("intersects"));
+        Object obj = result.get("intersects");
+        assertTrue("got back a boolean", obj instanceof Boolean);
+        assertTrue("intersects", (Boolean) obj);
+
+        // TODO: determine why this is not 2
+        assertEquals("intersects one", 2.0, result.get("count"));
+
+    }
+
     public void testExecuteIntersectsBuildingsMiss() throws Exception {
         JavaScriptProcess process = new JavaScriptProcess("intersects");
         WKTReader wktReader = new WKTReader();
@@ -197,7 +221,7 @@ public class JavaScriptProcessTest extends GeoServerTestSupport {
         WKTReader wktReader = new WKTReader();
 
         Map<String, Object> input = new HashMap<String, Object>();
-        input.put("geometry", wktReader.read("POINT (0.00216 0.00084)"));
+        input.put("geometry", wktReader.read("LINESTRING (0.00216 0.00084, 0.001 0.00054)"));
         input.put("namespace", "http://www.opengis.net/cite");
         input.put("featureType", "Buildings");
         input.put("filter", "ADDRESS LIKE '215 Main%'");
@@ -207,6 +231,9 @@ public class JavaScriptProcessTest extends GeoServerTestSupport {
         Object obj = result.get("intersects");
         assertTrue("got back a boolean", obj instanceof Boolean);
         assertTrue("intersects", (Boolean) obj);
+
+        assertEquals("intersects one", 1.0, result.get("count"));
+
     }
 
     public void testExecuteIntersectsBuildingsFilterMiss() throws Exception {

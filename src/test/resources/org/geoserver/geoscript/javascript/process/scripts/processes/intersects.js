@@ -1,5 +1,6 @@
 var Process = require("geoscript/process").Process;
-
+var Filter = require("geoscript/filter").Filter;
+var wkt = require("geoscript/geom/io/wkt");
 var catalog = require("geoserver/catalog");
 
 exports.process = new Process({
@@ -32,18 +33,27 @@ exports.process = new Process({
             type: "Boolean",
             title: "Intersection Result",
             description: "The input geometry intersects at least one feature in the target feature set."
+        },
+        count: {
+            type: "Integer",
+            title: "Number of Intersections",
+            description: "The number of target features intersected by the input geometry."
         }
     },
     run: function(inputs) {
         var intersects = false;
         var geometry = inputs.geometry;
         var layer = catalog.getFeatureType(inputs.namespace, inputs.featureType);
-        var cursor = layer.query(inputs.filter);
-        cursor.forEach(function(target) {
-            intersects = geometry.intersects(target.geometry);
-            return !intersects;
-        });
-        cursor.close(); // in case we stopped early
-        return {intersects: intersects};
+        var filter = new Filter(
+            "INTERSECTS(" + layer.schema.geometry.name + "," + wkt.write(geometry) + ")"
+        );
+        if (inputs.filter) {
+            filter = filter.and(new Filter(inputs.filter));
+        }
+        var count = layer.getCount(filter);
+        return {
+            intersects: count > 0,
+            count: count
+        };
     }
 });
