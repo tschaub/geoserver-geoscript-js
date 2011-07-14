@@ -73,9 +73,10 @@ public class JavaScriptTransactionPlugin implements TransactionPlugin {
      * @see org.geoserver.wfs.TransactionListener#dataStoreChange(org.geoserver.wfs.TransactionEvent)
      */
     public void dataStoreChange(final TransactionEvent event) throws WFSException {
-        // only cache features if we'll need them after the transaction
-        Function function = getFunction("afterTransaction");
-        if (function != null) {
+        // only cache features if we'll need them in beforeCommit or afterTransaction hooks
+        Function before = getFunction("beforeCommit");
+        Function after = getFunction("afterTransaction");
+        if (before != null || after != null) {
             try {
                 cacheFeatures(event);
             } catch (RuntimeException e) {
