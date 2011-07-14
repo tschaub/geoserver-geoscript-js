@@ -1,5 +1,5 @@
 var Process = require("geoscript/process").Process;
-var Filter = require("geoscript/filter").Filter;
+var where = require("geoscript/filter").where;
 var wkt = require("geoscript/geom/io/wkt");
 var catalog = require("geoserver/catalog");
 
@@ -41,14 +41,11 @@ exports.process = new Process({
         }
     },
     run: function(inputs) {
-        var intersects = false;
         var geometry = inputs.geometry;
         var layer = catalog.getFeatureType(inputs.namespace, inputs.featureType);
-        var filter = new Filter(
-            "INTERSECTS(" + layer.schema.geometry.name + "," + wkt.write(geometry) + ")"
-        );
+        var filter = where("INTERSECTS", layer.schema.geometry.name, wkt.write(geometry));
         if (inputs.filter) {
-            filter = filter.and(new Filter(inputs.filter));
+            filter = filter.and(inputs.filter);
         }
         var count = layer.getCount(filter);
         return {
