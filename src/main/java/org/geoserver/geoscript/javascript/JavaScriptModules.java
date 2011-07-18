@@ -40,6 +40,7 @@ public class JavaScriptModules {
     private RequireBuilder requireBuilder;
     transient private Global global;
     private Logger LOGGER = Logging.getLogger("org.geoserver.geoscript.javascript");
+    private Require sharedRequire;
     
     private GeoServerResourceLoader resourceLoader;
 
@@ -165,10 +166,20 @@ public class JavaScriptModules {
     }
     
     private Require installRequire(Context cx, Global global) {
-        RequireBuilder rb = getRequireBuilder();
-        Require require = rb.createRequire(cx, global);
-        require.install(global);
-        return require;
+        if (sharedRequire == null) {
+            synchronized (this) {
+                if (sharedRequire == null) {
+                    RequireBuilder rb = getRequireBuilder();
+                    sharedRequire = rb.createRequire(cx, global);
+                    sharedRequire.install(global);
+                }
+            }
+        }
+        return sharedRequire;
+//        RequireBuilder rb = getRequireBuilder();
+//        Require require = rb.createRequire(cx, global);
+//        require.install(global);
+//        return require;
     }
 
     public Scriptable require(String locator) {
