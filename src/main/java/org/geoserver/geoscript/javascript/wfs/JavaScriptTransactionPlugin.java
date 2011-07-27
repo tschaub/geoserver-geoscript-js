@@ -266,6 +266,8 @@ public class JavaScriptTransactionPlugin implements TransactionPlugin {
                 natives.put(i, natives, info);
             }
             details.put("natives", details, natives);
+            // add handle
+            details.put("handle", details, transaction.getHandle());
         } finally {
             Context.exit();
         }
