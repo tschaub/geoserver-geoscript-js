@@ -4,9 +4,7 @@
 </head>
 <body>
     <wicket:extend>
-        <pre wicket:id="results-wrapper" style="width: 100%; overflow: auto;"><wicket:fragment wicket:id="results">
-js> <wicket:fragment wicket:id="javascript"></wicket:fragment>
-<wicket:fragment wicket:id="result"></wicket:fragment></wicket:fragment></pre>
+        <pre wicket:id="results-wrapper" style="width: 100%; overflow: auto;"><wicket:fragment wicket:id="results">js> <wicket:fragment wicket:id="javascript"></wicket:fragment><wicket:fragment wicket:id="result"></wicket:fragment></wicket:fragment></pre>
         <form wicket:id="prompt-wrapper">
             <input type="text" wicket:id="prompt" style="width: 70%;"></input>
             <input type="submit" wicket:id="run"></input>

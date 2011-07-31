@@ -18,13 +18,14 @@ import org.geoserver.platform.GeoServerExtensions;
 import org.geoserver.web.GeoServerSecuredPage;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
+import org.mozilla.javascript.WrappedException;
 import org.mozilla.javascript.tools.shell.Global;
 
 public class JavaScriptConsolePage extends GeoServerSecuredPage {
     private class Result implements java.io.Serializable {
         private static final long serialVersionUID = 1L;
+        @SuppressWarnings("unused")
         public String input, response;
-        public boolean success = true;
     }
 
     private List<Result> results = new ArrayList<Result>();
@@ -33,7 +34,7 @@ public class JavaScriptConsolePage extends GeoServerSecuredPage {
     private JavaScriptModules jsModules;
 
     public JavaScriptConsolePage() {
-        this.jsModules = GeoServerExtensions.bean(JavaScriptModules.class);;
+        jsModules = GeoServerExtensions.bean(JavaScriptModules.class);
         global = jsModules.createGlobal();
 
         String locator = "geoserver/catalog";
@@ -72,14 +73,22 @@ public class JavaScriptConsolePage extends GeoServerSecuredPage {
 
     private Result eval(String js) {
         Result res = new Result();
-        res.input = js;
+        res.input = js + "\n";
 
         Context cx = jsModules.enterContext();
         try {
-            res.response = (String) Context.jsToJava(cx.evaluateString(global, js, "<input>", 1, null), String.class);
-        } catch(Exception e) {
-            res.success = false;
-            res.response = e.getMessage();
+            Object obj = cx.evaluateString(global, js, "<stdin>", 1, null);
+            if (obj != Context.getUndefinedValue()) {
+                res.response = Context.toString(obj) + "\n";
+            }
+        } catch (WrappedException we) {
+            // Some form of exception was caught by JavaScript and
+            // propagated up.
+            res.response = we.getWrappedException().toString() + "\n";
+            // we.printStackTrace();
+        } catch (Exception e) {
+            // Some form of JavaScript error.
+            res.response = "js: " + e.getMessage() + "\n";
         } finally {
             Context.exit();
         }
