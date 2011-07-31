@@ -1,7 +1,7 @@
-Index: src/community/pom.xml
-===================================================================
---- src/community/pom.xml	(revision 16007)
-+++ src/community/pom.xml	(working copy)
+diff --git a/src/community/pom.xml b/src/community/pom.xml
+index 59839ab..37fdba2 100644
+--- a/src/community/pom.xml
++++ b/src/community/pom.xml
 @@ -46,6 +46,12 @@
    <!-- profiles for individual modules -->
    <profiles>
@@ -15,11 +15,11 @@ Index: src/community/pom.xml
        <id>proxy</id>
        <modules>
          <module>proxy</module>
-Index: src/web/app/pom.xml
-===================================================================
---- src/web/app/pom.xml	(revision 16007)
-+++ src/web/app/pom.xml	(working copy)
-@@ -417,6 +417,16 @@
+diff --git a/src/web/app/pom.xml b/src/web/app/pom.xml
+index 35953dc..b7c2b82 100644
+--- a/src/web/app/pom.xml
++++ b/src/web/app/pom.xml
+@@ -456,6 +456,16 @@
        </dependencies>
      </profile>
      <profile>
