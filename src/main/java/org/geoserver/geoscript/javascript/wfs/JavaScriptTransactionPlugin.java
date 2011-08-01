@@ -2,6 +2,7 @@
 package org.geoserver.geoscript.javascript.wfs;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.logging.Level;
@@ -28,7 +29,6 @@ import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.JavaScriptException;
 import org.mozilla.javascript.Scriptable;
-import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.tools.shell.Global;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.type.Name;
@@ -40,7 +40,6 @@ import org.springframework.util.Assert;
 public class JavaScriptTransactionPlugin implements TransactionPlugin {
     
     private JavaScriptModules jsModules;
-    private Function featureConverter;
     private Logger LOGGER = Logging.getLogger("org.geoserver.geoscript.javascript");
     private static final String JS_TRANSACTION_CACHE = "JS_TRANSACTION_CACHE";
     
@@ -139,17 +138,19 @@ public class JavaScriptTransactionPlugin implements TransactionPlugin {
         return priority;
     }
 
+    /**
+     * Creates a function that can be used to convert 
+     * org.opengis.feature.simple.SimpleFeature objects to GeoScript features.
+     * As with all methods that call {@link JavaScriptModules#require(String)}),
+     * the return value should not be cached, as internal closures have 
+     * references to GeoScript constructors, and instanceof checks will fail
+     * when comparing objects from a different require call.
+     * @return function for wrapping features
+     */
     private Function getFeatureConverter() {
-        if (featureConverter == null) {
-            synchronized (this) {
-               if (featureConverter == null) {
-                   Scriptable exports = jsModules.require("geoscript/feature");
-                   Scriptable FeatureWrapper = (Scriptable) exports.get("Feature", exports);
-                   featureConverter = (Function) FeatureWrapper.get("from_", FeatureWrapper);
-               }
-            }
-        }
-        return featureConverter;
+        Scriptable exports = jsModules.require("geoscript/feature");
+        Scriptable FeatureWrapper = (Scriptable) exports.get("Feature", exports);
+        return (Function) FeatureWrapper.get("from_", FeatureWrapper);
     }
     
     private Scriptable getExports() {
@@ -201,22 +202,17 @@ public class JavaScriptTransactionPlugin implements TransactionPlugin {
         String type = event.getType().name();
 
         SimpleFeatureIterator features = featureCollection.features();
-        Context cx = jsModules.enterContext();
-        Global global = jsModules.getSharedGlobal();
         try {
             while (features.hasNext()) {
                 SimpleFeature feature = features.next();
-                Scriptable info = cx.newObject(global);
-                ScriptableObject.putProperty(info, "name", local);
-                ScriptableObject.putProperty(info, "uri", uri);
-                Object featureObj = getFeatureConverter().call(
-                        cx, global, global, new Object[] { feature });
-                ScriptableObject.putProperty(info, "feature", featureObj);
+                Map<String, Object> info = new HashMap<String, Object>();
+                info.put("name", local);
+                info.put("uri", uri);
+                info.put("feature", feature);
                 featureCache.put(type, info);
             }
         } finally {
             features.close();
-            Context.exit();
         }
     }
     
@@ -237,19 +233,26 @@ public class JavaScriptTransactionPlugin implements TransactionPlugin {
         EList<?> nativeList = transaction.getNative();
         Scriptable details = null;
         Context cx = jsModules.enterContext();
-        Global global = jsModules.getSharedGlobal();
         try {
+            Global global = jsModules.getSharedGlobal();
+            Function featureConverter = getFeatureConverter();
             details = cx.newObject(global);
             // add map of event -> features
             @SuppressWarnings("unchecked")
-            Iterator<Map.Entry<String,ArrayList<Scriptable>>> it = featureCache.entrySet().iterator();
+            Iterator<Map.Entry<String,ArrayList<Map<String, Object>>>> it = featureCache.entrySet().iterator();
             while (it.hasNext()) {
-                Map.Entry<String, ArrayList<Scriptable>> entry = it.next();
+                Map.Entry<String, ArrayList<Map<String, Object>>> entry = it.next();
                 String type = entry.getKey();
-                ArrayList<Scriptable> featureList = entry.getValue();
+                ArrayList<Map<String, Object>> featureList = entry.getValue();
                 Scriptable array = cx.newArray(global, featureList.size());
                 for (int index=0; index<featureList.size(); ++index) {
-                    Scriptable info = featureList.get(index);
+                    Map<String, Object> obj = featureList.get(index);
+                    Scriptable info = cx.newObject(global);
+                    info.put("name", info, obj.get("name"));
+                    info.put("uri", info, obj.get("uri"));
+                    Object featureObj = featureConverter.call(
+                          cx, global, global, new Object[] { obj.get("feature") });
+                    info.put("feature", info, featureObj);
                     array.put(index, array, info);
                 }
                 details.put(type, details, array);
