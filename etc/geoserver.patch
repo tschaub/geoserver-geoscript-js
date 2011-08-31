@@ -1,7 +1,7 @@
-diff --git a/src/community/pom.xml b/src/community/pom.xml
+diff --git a/community/pom.xml b/community/pom.xml
 index 59839ab..37fdba2 100644
---- a/src/community/pom.xml
-+++ b/src/community/pom.xml
+--- a/community/pom.xml
++++ b/community/pom.xml
 @@ -46,6 +46,12 @@
    <!-- profiles for individual modules -->
    <profiles>
@@ -17,8 +17,8 @@ index 59839ab..37fdba2 100644
          <module>proxy</module>
 diff --git a/src/web/app/pom.xml b/src/web/app/pom.xml
 index 35953dc..b7c2b82 100644
---- a/src/web/app/pom.xml
-+++ b/src/web/app/pom.xml
+--- a/web/app/pom.xml
++++ b/web/app/pom.xml
 @@ -456,6 +456,16 @@
        </dependencies>
      </profile>
