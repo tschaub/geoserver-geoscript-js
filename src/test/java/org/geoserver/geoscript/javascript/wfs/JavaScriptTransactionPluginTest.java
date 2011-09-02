@@ -74,7 +74,7 @@ public class JavaScriptTransactionPluginTest extends WFSTestSupport {
         assertEquals("correct code", "234", code);
 
         Element text = getFirstElementByTagName(exception, "ows:ExceptionText");
-        assertEquals("correct message", "PreInsert: 2 PreUpdate: 1 PostUpdate: 1 PostDelete: 1 natives: 2", text.getFirstChild().getNodeValue());
+        assertEquals("correct message", "PreInsert: 2 PreUpdate: 1 PostInsert: 2 PostUpdate: 1 PostDelete: 1 natives: 2", text.getFirstChild().getNodeValue());
 
       }
 
@@ -100,7 +100,7 @@ public class JavaScriptTransactionPluginTest extends WFSTestSupport {
         assertEquals("correct code", "234", code);
 
         Element text = getFirstElementByTagName(exception, "ows:ExceptionText");
-        assertEquals("correct message", "PreInsert: 2 PreUpdate: 1 PostUpdate: 1 PostDelete: 1 natives: 2", text.getFirstChild().getNodeValue());
+        assertEquals("correct message", "PreInsert: 2 PreUpdate: 1 PostInsert: 2 PostUpdate: 1 PostDelete: 1 natives: 2", text.getFirstChild().getNodeValue());
 
       }
 

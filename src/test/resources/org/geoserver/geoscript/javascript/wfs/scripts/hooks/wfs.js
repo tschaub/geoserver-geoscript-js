@@ -1,7 +1,7 @@
 
 // returns a string summarizing the details provided to wfs hooks
 function summarize(details) {
-    var keys = ["PreInsert", "PreUpdate", "PostUpdate", "PostDelete", "natives"];
+    var keys = ["PreInsert", "PreUpdate", "PostInsert", "PostUpdate", "PostDelete", "natives"];
     var key, val, message = [];
     for (var i=0, ii=keys.length; i<ii; ++i) {
         key = keys[i];
