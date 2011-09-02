@@ -185,13 +185,14 @@ public class JavaScriptTransactionPlugin implements TransactionPlugin {
     }
 
     private void cacheFeatures(final TransactionEvent event) {
-        final Object source = event.getSource();
-        if (!(source instanceof InsertElementType || source instanceof UpdateElementType || source instanceof DeleteElementType)) {
-            return;
-        }
-
-        final EObject originatingTransactionRequest = (EObject) source;
-        Assert.notNull(originatingTransactionRequest);
+        // TODO: restore this if event source is changed back to en element
+//        final Object source = event.getSource();
+//        if (!(source instanceof InsertElementType || source instanceof UpdateElementType || source instanceof DeleteElementType)) {
+//            return;
+//        }
+//
+//        final EObject originatingTransactionRequest = (EObject) source;
+//        Assert.notNull(originatingTransactionRequest);
 
         final SimpleFeatureCollection featureCollection = event.getAffectedFeatures();
         Name schemaName = featureCollection.getSchema().getName();
